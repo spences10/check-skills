@@ -90,7 +90,7 @@ export const RULES: RuleExplanation[] = [
 		description:
 			'The description does not include clear trigger language.',
 		suggestion:
-			'Include "Use when..." or equivalent trigger wording.',
+			'Include "Use when...", "When...", "For...", or a clear imperative task phrase such as "Analyze...".',
 	},
 	{
 		code: 'skill-md-too-long',
@@ -111,7 +111,7 @@ export const RULES: RuleExplanation[] = [
 		description:
 			'The description contains vendor-specific wording without compatibility context.',
 		suggestion:
-			'Add compatibility or make the description vendor-neutral.',
+			'Add compatibility, e.g. compatibility: Requires Claude Code plugin support., or make the description vendor-neutral.',
 	},
 	{
 		code: 'unreferenced-script',

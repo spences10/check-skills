@@ -98,7 +98,7 @@ export function run_quality_rules(
 			line: frontmatter_line(document, 'description'),
 			column: 1,
 			suggestion:
-				'Add compatibility explaining the vendor dependency, or make the description vendor-neutral.',
+				'Add compatibility, e.g. compatibility: Requires Claude Code plugin support., or make the description vendor-neutral.',
 		});
 	}
 
@@ -136,8 +136,14 @@ function is_vague_description(description: string): boolean {
 }
 
 function has_trigger_language(description: string): boolean {
-	return /\b(use when|use for|use to|when asked|when the user|run when|trigger)\b/iu.test(
-		description,
+	return (
+		/\b(use when|use for|use to|when asked|when the user|run when|trigger)\b/iu.test(
+			description,
+		) ||
+		/^(when|for)\b/iu.test(description.trim()) ||
+		/^(add|analyze|audit|build|check|compare|create|debug|design|diagnose|extract|find|fix|generate|implement|improve|inspect|migrate|plan|query|refactor|review|setup|summarize|test|validate|write)\b/iu.test(
+			description.trim(),
+		)
 	);
 }
 

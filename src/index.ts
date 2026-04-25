@@ -63,6 +63,10 @@ const validate = defineCommand({
 			type: 'boolean',
 			description: 'Output concise stable text for LLM agents',
 		},
+		quiet: {
+			type: 'boolean',
+			description: 'Only show skills with problems',
+		},
 		format: {
 			type: 'enum',
 			description: 'Output format',
@@ -100,11 +104,13 @@ const validate = defineCommand({
 		if (args.json) {
 			console.log(JSON.stringify(report, null, 2));
 		} else if (args.llm) {
-			console.log(format_llm_validation(report));
+			console.log(
+				format_llm_validation(report, args.strict, args.quiet),
+			);
 		} else if (args.format === 'github') {
 			console.log(format_github_validation(report));
 		} else {
-			console.log(format_validation(report));
+			console.log(format_validation(report, args.quiet));
 		}
 
 		process.exit(report.ok ? 0 : 1);
@@ -341,9 +347,16 @@ function positional_paths(values: string[]): string[] {
 	return values.length > 0 ? values : [];
 }
 
-function format_validation(report: ValidationReport): string {
+function format_validation(
+	report: ValidationReport,
+	quiet = false,
+): string {
 	const lines: string[] = [];
 	for (const skill of report.skills) {
+		if (quiet && skill.problems.length === 0) {
+			continue;
+		}
+
 		const marker = skill.ok ? '✓' : '✖';
 		lines.push(`${marker} ${skill.path}`);
 		for (const problem of skill.problems) {
@@ -352,6 +365,10 @@ function format_validation(report: ValidationReport): string {
 				lines.push(`    fix: ${problem.suggestion}`);
 			}
 		}
+	}
+
+	if (quiet && lines.length === 0) {
+		return 'No problems found.';
 	}
 
 	const skill_word =
@@ -363,15 +380,19 @@ function format_validation(report: ValidationReport): string {
 	return lines.join('\n');
 }
 
-function format_llm_validation(report: ValidationReport): string {
+function format_llm_validation(
+	report: ValidationReport,
+	strict = false,
+	quiet = false,
+): string {
 	const lines: string[] = [];
 	for (const skill of report.skills) {
-		if (skill.problems.length === 0) {
-			lines.push(`PASS ${skill.path}`);
+		if (quiet && skill.problems.length === 0) {
 			continue;
 		}
 
-		lines.push(`FAIL ${skill.path}`);
+		const status = skill_status(skill.problems, strict);
+		lines.push(`${status} ${skill.path}`);
 		for (const problem of skill.problems) {
 			lines.push(`- ${format_problem(problem)}`);
 			if (problem.suggestion) {
@@ -379,7 +400,17 @@ function format_llm_validation(report: ValidationReport): string {
 			}
 		}
 	}
-	return lines.join('\n');
+	return lines.length > 0 ? lines.join('\n') : 'No problems found.';
+}
+
+function skill_status(problems: Problem[], strict: boolean): string {
+	if (problems.some((problem) => problem.severity === 'error')) {
+		return 'FAIL';
+	}
+	if (problems.length > 0) {
+		return strict ? 'FAIL' : 'WARN';
+	}
+	return 'PASS';
 }
 
 function format_github_validation(report: ValidationReport): string {

@@ -198,6 +198,30 @@ Read [missing](references/missing.md).
 		expect(problem.suggestion).toContain('--recursive');
 	});
 
+	it('accepts clear imperative descriptions as trigger language', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'analyze-skill',
+			`---
+name: analyze-skill
+description: Analyze session history for reusable lessons and persist durable project guidance.
+---
+
+## Steps
+
+- Review session notes.
+`,
+		);
+
+		const report = validate_paths(['analyze-skill'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(codes).not.toContain('missing-trigger-language');
+	});
+
 	it('serializes JSON output shape', () => {
 		const root = tmp_root();
 		skill(root, 'good-skill', VALID_SKILL);
