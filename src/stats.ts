@@ -1,35 +1,35 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { validatePaths } from './validate.js';
 import type { ValidateOptions } from './types.js';
+import { validate_paths } from './validate.js';
 
 export interface StatsReport {
 	skills: number;
 	passing: number;
 	failing: number;
 	warnings: number;
-	longestDescriptions: Array<{
+	longest_descriptions: Array<{
 		path: string;
 		name?: string;
 		length: number;
 	}>;
-	largestSkillFiles: Array<{ path: string; bytes: number }>;
-	withScripts: number;
-	withReferences: number;
-	withAssets: number;
-	duplicateNames: string[];
-	vendorSpecificLanguage: number;
+	largest_skill_files: Array<{ path: string; bytes: number }>;
+	with_scripts: number;
+	with_references: number;
+	with_assets: number;
+	duplicate_names: string[];
+	vendor_specific_language: number;
 }
 
-export function getStats(
+export function get_stats(
 	path: string,
 	options: ValidateOptions = {},
 ): StatsReport {
-	const report = validatePaths([path], {
+	const report = validate_paths([path], {
 		...options,
 		recursive: true,
 	});
-	const duplicateNames = findDuplicates(
+	const duplicate_names = find_duplicates(
 		report.skills
 			.map((skill) => skill.name)
 			.filter((name) => name !== undefined),
@@ -40,10 +40,10 @@ export function getStats(
 		passing: report.summary.passed,
 		failing: report.summary.failed,
 		warnings: report.summary.warnings,
-		longestDescriptions: report.skills
+		longest_descriptions: report.skills
 			.map((skill) => {
 				const description = String(
-					readFrontmatterValue(
+					read_frontmatter_value(
 						skill.path,
 						'description',
 						options.cwd,
@@ -58,30 +58,30 @@ export function getStats(
 			})
 			.sort((a, b) => b.length - a.length)
 			.slice(0, 10),
-		largestSkillFiles: report.skills
+		largest_skill_files: report.skills
 			.map((skill) => ({
 				path: skill.path,
-				bytes: skillFileSize(skill.path, options.cwd),
+				bytes: skill_file_size(skill.path, options.cwd),
 			}))
 			.sort((a, b) => b.bytes - a.bytes)
 			.slice(0, 10),
-		withScripts: countWithDir(
+		with_scripts: count_with_dir(
 			report.skills.map((skill) => skill.path),
 			'scripts',
 			options.cwd,
 		),
-		withReferences: countWithDir(
+		with_references: count_with_dir(
 			report.skills.map((skill) => skill.path),
 			'references',
 			options.cwd,
 		),
-		withAssets: countWithDir(
+		with_assets: count_with_dir(
 			report.skills.map((skill) => skill.path),
 			'assets',
 			options.cwd,
 		),
-		duplicateNames,
-		vendorSpecificLanguage: report.skills.reduce(
+		duplicate_names,
+		vendor_specific_language: report.skills.reduce(
 			(count, skill) =>
 				count +
 				skill.problems.filter(
@@ -92,14 +92,14 @@ export function getStats(
 	};
 }
 
-function readFrontmatterValue(
-	skillPath: string,
+function read_frontmatter_value(
+	skill_path: string,
 	key: string,
 	cwd = process.cwd(),
 ): unknown {
-	const fullPath = join(cwd, skillPath, 'SKILL.md');
+	const full_path = join(cwd, skill_path, 'SKILL.md');
 	try {
-		const raw = readFileSync(fullPath, 'utf-8');
+		const raw = readFileSync(full_path, 'utf-8');
 		const match = raw.match(new RegExp(`^${key}:\\s*(.+)$`, 'mu'));
 		return match?.[1]?.replace(/^['"]|['"]$/gu, '');
 	} catch {
@@ -107,18 +107,18 @@ function readFrontmatterValue(
 	}
 }
 
-function skillFileSize(
-	skillPath: string,
+function skill_file_size(
+	skill_path: string,
 	cwd = process.cwd(),
 ): number {
 	try {
-		return statSync(join(cwd, skillPath, 'SKILL.md')).size;
+		return statSync(join(cwd, skill_path, 'SKILL.md')).size;
 	} catch {
 		return 0;
 	}
 }
 
-function countWithDir(
+function count_with_dir(
 	paths: string[],
 	dir: string,
 	cwd = process.cwd(),
@@ -127,7 +127,7 @@ function countWithDir(
 		.length;
 }
 
-function findDuplicates(values: string[]): string[] {
+function find_duplicates(values: string[]): string[] {
 	const seen = new Set<string>();
 	const duplicate = new Set<string>();
 	for (const value of values) {
@@ -139,17 +139,17 @@ function findDuplicates(values: string[]): string[] {
 	return [...duplicate].sort();
 }
 
-export function formatStats(report: StatsReport): string {
+export function format_stats(report: StatsReport): string {
 	const lines = [
 		`${report.skills} skills: ${report.passing} passing, ${report.failing} failing, ${report.warnings} warnings`,
-		`with scripts: ${report.withScripts}`,
-		`with references: ${report.withReferences}`,
-		`with assets: ${report.withAssets}`,
+		`with scripts: ${report.with_scripts}`,
+		`with references: ${report.with_references}`,
+		`with assets: ${report.with_assets}`,
 	];
 
-	if (report.duplicateNames.length > 0) {
+	if (report.duplicate_names.length > 0) {
 		lines.push(
-			`duplicate names: ${report.duplicateNames.join(', ')}`,
+			`duplicate names: ${report.duplicate_names.join(', ')}`,
 		);
 	}
 

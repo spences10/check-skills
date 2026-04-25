@@ -9,7 +9,7 @@ const AGENT_LABELS: Record<AgentName, string> = {
 	pi: 'Pi',
 };
 
-export function runAdapterRules(
+export function run_adapter_rules(
 	document: SkillDocument,
 	agent: AgentName,
 ): Problem[] {
@@ -29,6 +29,9 @@ export function runAdapterRules(
 			code: 'agent-compatibility-not-mentioned',
 			message: `--agent ${agent} was requested, but compatibility does not mention ${label}`,
 			file: 'SKILL.md',
+			line: 1,
+			column: 1,
+			suggestion: `Add ${label} to compatibility if this skill is intended for that agent.`,
 		});
 	}
 
@@ -39,6 +42,10 @@ export function runAdapterRules(
 			message:
 				'Claude Code examples usually use npx or tool-agnostic wording instead of pnpx-only commands',
 			file: 'SKILL.md',
+			line: 1,
+			column: 1,
+			suggestion:
+				'Use npx, or make the command example package-manager neutral.',
 		});
 	}
 

@@ -6,9 +6,9 @@ import {
 } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import YAML from 'yaml';
-import { runAdapterRules } from './rules/adapters.js';
-import { runQualityRules } from './rules/quality.js';
-import { runSpecRules } from './rules/spec.js';
+import { run_adapter_rules } from './rules/adapters.js';
+import { run_quality_rules } from './rules/quality.js';
+import { run_spec_rules } from './rules/spec.js';
 import type {
 	Problem,
 	SkillDocument,
@@ -17,7 +17,7 @@ import type {
 	ValidationReport,
 } from './types.js';
 
-export function discoverSkillDirs(
+export function discover_skill_dirs(
 	paths: string[],
 	options: ValidateOptions = {},
 ): string[] {
@@ -25,47 +25,47 @@ export function discoverSkillDirs(
 	const found = new Set<string>();
 
 	for (const input of paths) {
-		const fullPath = resolve(cwd, input);
-		if (!existsSync(fullPath)) {
-			found.add(fullPath);
+		const full_path = resolve(cwd, input);
+		if (!existsSync(full_path)) {
+			found.add(full_path);
 			continue;
 		}
 
-		const stats = statSync(fullPath);
+		const stats = statSync(full_path);
 		if (stats.isFile()) {
 			found.add(
-				basename(fullPath) === 'SKILL.md'
-					? resolve(fullPath, '..')
-					: fullPath,
+				basename(full_path) === 'SKILL.md'
+					? resolve(full_path, '..')
+					: full_path,
 			);
 			continue;
 		}
 
 		if (!stats.isDirectory()) {
-			found.add(fullPath);
+			found.add(full_path);
 			continue;
 		}
 
-		if (existsSync(join(fullPath, 'SKILL.md'))) {
-			found.add(fullPath);
+		if (existsSync(join(full_path, 'SKILL.md'))) {
+			found.add(full_path);
 			continue;
 		}
 
 		if (options.recursive) {
-			for (const dir of walkForSkillDirs(fullPath)) {
+			for (const dir of walk_for_skill_dirs(full_path)) {
 				found.add(dir);
 			}
 		} else {
-			found.add(fullPath);
+			found.add(full_path);
 		}
 	}
 
 	return [...found].sort();
 }
 
-function walkForSkillDirs(root: string): string[] {
+function walk_for_skill_dirs(root: string): string[] {
 	const found: string[] = [];
-	const entries = safeReadDir(root);
+	const entries = safe_read_dir(root);
 
 	if (existsSync(join(root, 'SKILL.md'))) {
 		found.push(root);
@@ -81,16 +81,16 @@ function walkForSkillDirs(root: string): string[] {
 			continue;
 		}
 
-		const fullPath = join(root, entry);
-		if (safeIsDirectory(fullPath)) {
-			found.push(...walkForSkillDirs(fullPath));
+		const full_path = join(root, entry);
+		if (safe_is_directory(full_path)) {
+			found.push(...walk_for_skill_dirs(full_path));
 		}
 	}
 
 	return found;
 }
 
-function safeReadDir(path: string): string[] {
+function safe_read_dir(path: string): string[] {
 	try {
 		return readdirSync(path);
 	} catch {
@@ -98,7 +98,7 @@ function safeReadDir(path: string): string[] {
 	}
 }
 
-function safeIsDirectory(path: string): boolean {
+function safe_is_directory(path: string): boolean {
 	try {
 		return statSync(path).isDirectory();
 	} catch {
@@ -106,59 +106,67 @@ function safeIsDirectory(path: string): boolean {
 	}
 }
 
-export function readSkillDocument(dir: string): SkillDocument {
-	const skillFile = join(dir, 'SKILL.md');
+export function read_skill_document(dir: string): SkillDocument {
+	const skill_file = join(dir, 'SKILL.md');
 
-	if (!existsSync(skillFile)) {
+	if (!existsSync(skill_file)) {
 		return {
 			dir,
-			skillFile,
+			skill_file,
 			frontmatter: null,
 			body: '',
-			lineCount: 0,
-			frontmatterError: 'SKILL.md is missing',
+			line_count: 0,
+			body_start_line: 1,
+			content: '',
+			frontmatter_error: 'SKILL.md is missing',
 		};
 	}
 
-	const content = readFileSync(skillFile, 'utf-8');
-	const lineCount = content.split(/\r?\n/).length;
-	const parsed = parseFrontmatter(content);
+	const content = readFileSync(skill_file, 'utf-8');
+	const line_count = content.split(/\r?\n/).length;
+	const parsed = parse_frontmatter(content);
 
 	return {
 		dir,
-		skillFile,
-		lineCount,
+		skill_file,
+		line_count,
+		content,
 		...parsed,
 	};
 }
 
-export function parseFrontmatter(
+export function parse_frontmatter(
 	content: string,
-): Pick<SkillDocument, 'frontmatter' | 'body' | 'frontmatterError'> {
+): Pick<
+	SkillDocument,
+	'frontmatter' | 'body' | 'body_start_line' | 'frontmatter_error'
+> {
 	const lines = content.split(/\r?\n/);
 	if (lines[0]?.trim() !== '---') {
 		return {
 			frontmatter: null,
 			body: content,
-			frontmatterError: 'YAML frontmatter is missing',
+			body_start_line: 1,
+			frontmatter_error: 'YAML frontmatter is missing',
 		};
 	}
 
-	const endIndex = lines.findIndex(
+	const end_index = lines.findIndex(
 		(line, index) => index > 0 && line.trim() === '---',
 	);
-	if (endIndex === -1) {
+	if (end_index === -1) {
 		return {
 			frontmatter: null,
 			body: lines.slice(1).join('\n'),
-			frontmatterError:
+			body_start_line: 2,
+			frontmatter_error:
 				'YAML frontmatter closing delimiter is missing',
 		};
 	}
 
-	const rawYaml = lines.slice(1, endIndex).join('\n');
+	const raw_yaml = lines.slice(1, end_index).join('\n');
 	try {
-		const parsed = YAML.parse(rawYaml) as unknown;
+		const parsed = YAML.parse(raw_yaml) as unknown;
 		if (
 			parsed === null ||
 			typeof parsed !== 'object' ||
@@ -166,20 +174,23 @@ export function parseFrontmatter(
 		) {
 			return {
 				frontmatter: null,
-				body: lines.slice(endIndex + 1).join('\n'),
-				frontmatterError: 'YAML frontmatter must be a mapping',
+				body: lines.slice(end_index + 1).join('\n'),
+				body_start_line: end_index + 2,
+				frontmatter_error: 'YAML frontmatter must be a mapping',
 			};
 		}
 
 		return {
 			frontmatter: parsed as SkillDocument['frontmatter'],
-			body: lines.slice(endIndex + 1).join('\n'),
+			body: lines.slice(end_index + 1).join('\n'),
+			body_start_line: end_index + 2,
 		};
 	} catch (error) {
 		return {
 			frontmatter: null,
-			body: lines.slice(endIndex + 1).join('\n'),
-			frontmatterError:
+			body: lines.slice(end_index + 1).join('\n'),
+			body_start_line: end_index + 2,
+			frontmatter_error:
 				error instanceof Error
 					? error.message
 					: 'YAML frontmatter is invalid',
@@ -187,20 +198,20 @@ export function parseFrontmatter(
 	}
 }
 
-export function validateSkillDir(
+export function validate_skill_dir(
 	dir: string,
 	options: ValidateOptions = {},
 ): SkillResult {
-	const document = readSkillDocument(dir);
+	const document = read_skill_document(dir);
 	const problems: Problem[] = [];
-	problems.push(...runSpecRules(document));
+	problems.push(...run_spec_rules(document));
 
 	if (options.quality !== false) {
-		problems.push(...runQualityRules(document));
+		problems.push(...run_quality_rules(document));
 	}
 
 	if (options.agent) {
-		problems.push(...runAdapterRules(document, options.agent));
+		problems.push(...run_adapter_rules(document, options.agent));
 	}
 
 	const errors = problems.filter(
@@ -219,13 +230,13 @@ export function validateSkillDir(
 	};
 }
 
-export function validatePaths(
+export function validate_paths(
 	paths: string[],
 	options: ValidateOptions = {},
 ): ValidationReport {
-	const skillDirs = discoverSkillDirs(paths, options);
-	const skills = skillDirs.map((dir) =>
-		validateSkillDir(dir, options),
+	const skill_dirs = discover_skill_dirs(paths, options);
+	const skills = skill_dirs.map((dir) =>
+		validate_skill_dir(dir, options),
 	);
 	const errors = skills.reduce(
 		(count, skill) =>

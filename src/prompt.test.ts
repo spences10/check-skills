@@ -1,10 +1,10 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { skillsToPrompt } from './prompt.js';
+import { skills_to_prompt } from './prompt.js';
 
-function makeSkill(root: string): void {
+function make_skill(root: string): void {
 	const dir = join(root, 'prompt-skill');
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(
@@ -20,12 +20,12 @@ description: Use when you need to generate an available skills prompt block.
 	);
 }
 
-describe('skillsToPrompt', () => {
+describe('skills_to_prompt', () => {
 	it('emits an available_skills block', () => {
 		const root = mkdtempSync(join(tmpdir(), 'check-skills-prompt-'));
-		makeSkill(root);
+		make_skill(root);
 
-		const prompt = skillsToPrompt(['prompt-skill'], { cwd: root });
+		const prompt = skills_to_prompt(['prompt-skill'], { cwd: root });
 
 		expect(prompt).toContain('<available_skills>');
 		expect(prompt).toContain('<name>prompt-skill</name>');

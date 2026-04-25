@@ -13,6 +13,9 @@ export interface Problem {
 	code: string;
 	message: string;
 	file?: string;
+	line?: number;
+	column?: number;
+	suggestion?: string;
 }
 
 export interface SkillFrontmatter {
@@ -25,11 +28,13 @@ export interface SkillFrontmatter {
 
 export interface SkillDocument {
 	dir: string;
-	skillFile: string;
+	skill_file: string;
 	frontmatter: SkillFrontmatter | null;
 	body: string;
-	lineCount: number;
-	frontmatterError?: string;
+	line_count: number;
+	body_start_line: number;
+	content: string;
+	frontmatter_error?: string;
 }
 
 export interface SkillResult {
@@ -59,6 +64,13 @@ export interface ValidateOptions {
 	agent?: AgentName;
 	quality?: boolean;
 	cwd?: string;
+}
+
+export interface RuleExplanation {
+	code: string;
+	severity: Severity;
+	description: string;
+	suggestion: string;
 }
 
 export interface PromptSkill {

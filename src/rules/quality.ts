@@ -1,7 +1,11 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Problem, SkillDocument } from '../types.js';
-import { extractLocalReferences, isExecutable } from './spec.js';
+import {
+	extract_local_reference_locations,
+	frontmatter_line,
+	is_executable,
+} from './spec.js';
 
 const VENDOR_WORDS = [
 	'Claude Code',
@@ -13,28 +17,9 @@ const VENDOR_WORDS = [
 	'Pi',
 ];
 
-const TASK_KEYWORDS = [
-	'add',
-	'audit',
-	'build',
-	'check',
-	'create',
-	'debug',
-	'design',
-	'fix',
-	'generate',
-	'implement',
-	'improve',
-	'migrate',
-	'plan',
-	'refactor',
-	'review',
-	'test',
-	'validate',
-	'write',
-];
-
-export function runQualityRules(document: SkillDocument): Problem[] {
+export function run_quality_rules(
+	document: SkillDocument,
+): Problem[] {
 	const problems: Problem[] = [];
 	const description =
 		typeof document.frontmatter?.description === 'string'
@@ -46,44 +31,46 @@ export function runQualityRules(document: SkillDocument): Problem[] {
 			: '';
 
 	if (description) {
-		if (isVagueDescription(description)) {
+		if (is_vague_description(description)) {
 			problems.push({
 				severity: 'warn',
 				code: 'vague-description',
 				message:
-					'description should be specific enough for an agent to know when to use the skill',
+					'description is too vague for reliable agent triggering',
 				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Rewrite the description with concrete trigger language and task terms.',
 			});
 		}
 
-		if (!hasTriggerLanguage(description)) {
+		if (!has_trigger_language(description)) {
 			problems.push({
 				severity: 'warn',
 				code: 'missing-trigger-language',
 				message:
 					'description should include trigger language such as "Use when..."',
 				file: 'SKILL.md',
-			});
-		}
-
-		if (!hasTaskKeyword(description)) {
-			problems.push({
-				severity: 'warn',
-				code: 'missing-task-keywords',
-				message:
-					'description should include concrete task keywords agents can match',
-				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Rewrite the description to start with or include: "Use when..."',
 			});
 		}
 	}
 
-	if (document.lineCount > 500) {
+	if (document.line_count > 500) {
 		problems.push({
 			severity: 'warn',
 			code: 'skill-md-too-long',
 			message:
 				'SKILL.md is over 500 lines; move detail into references/',
 			file: 'SKILL.md',
+			line: 1,
+			column: 1,
+			suggestion:
+				'Keep SKILL.md concise and move long detail to references/ files.',
 		});
 	}
 
@@ -92,26 +79,34 @@ export function runQualityRules(document: SkillDocument): Problem[] {
 			severity: 'warn',
 			code: 'body-too-long',
 			message:
-				'SKILL.md body is very long; keep the main skill concise and move detail into references/',
+				'SKILL.md body is very long; move detail into references/',
 			file: 'SKILL.md',
+			line: document.body_start_line,
+			column: 1,
+			suggestion:
+				'Extract detailed examples or background material into references/.',
 		});
 	}
 
-	if (hasVendorSpecificWording(document, compatibility)) {
+	const vendor_terms = vendor_specific_terms(document, compatibility);
+	if (vendor_terms.length > 0) {
 		problems.push({
 			severity: 'warn',
 			code: 'vendor-specific-wording',
-			message:
-				'portable skills should avoid vendor-specific wording unless compatibility explains it',
+			message: `description contains vendor-specific wording without compatibility: ${vendor_terms.join(', ')}`,
 			file: 'SKILL.md',
+			line: frontmatter_line(document, 'description'),
+			column: 1,
+			suggestion:
+				'Add compatibility explaining the vendor dependency, or make the description vendor-neutral.',
 		});
 	}
 
-	problems.push(...checkScripts(document));
+	problems.push(...check_scripts(document));
 
 	if (
 		document.body.trim() &&
-		!hasConcreteInstructions(document.body)
+		!has_concrete_instructions(document.body)
 	) {
 		problems.push({
 			severity: 'warn',
@@ -119,93 +114,98 @@ export function runQualityRules(document: SkillDocument): Problem[] {
 			message:
 				'skill should include examples, decision steps, workflow, or concrete instructions',
 			file: 'SKILL.md',
+			line: document.body_start_line,
+			column: 1,
+			suggestion:
+				'Add a short workflow, checklist, examples, or explicit instructions.',
 		});
 	}
 
 	return problems;
 }
 
-function isVagueDescription(description: string): boolean {
+function is_vague_description(description: string): boolean {
 	const normalized = description.toLowerCase();
 	return (
-		normalized.length < 35 ||
-		/^(helps?|assists?|supports?|guides?)\s+(with|to|you)/u.test(
+		normalized.length < 28 ||
+		/^(helps?|assists?|supports?)\s+(with|to|you)\b/u.test(
 			normalized,
 		) ||
 		/^(useful|helpful)\s+for\b/u.test(normalized)
 	);
 }
 
-function hasTriggerLanguage(description: string): boolean {
+function has_trigger_language(description: string): boolean {
 	return /\b(use when|use for|use to|when asked|when the user|run when|trigger)\b/iu.test(
 		description,
 	);
 }
 
-function hasTaskKeyword(description: string): boolean {
-	const lower = description.toLowerCase();
-	return TASK_KEYWORDS.some((keyword) => lower.includes(keyword));
-}
-
-function hasVendorSpecificWording(
+function vendor_specific_terms(
 	document: SkillDocument,
 	compatibility: string,
-): boolean {
+): string[] {
 	if (compatibility.trim()) {
-		return false;
+		return [];
 	}
 
 	const description =
 		typeof document.frontmatter?.description === 'string'
 			? document.frontmatter.description
 			: '';
-	const text = `${document.body}\n${description}`;
-	return VENDOR_WORDS.some((word) =>
-		new RegExp(`\\b${escapeRegExp(word)}\\b`, 'u').test(text),
+	return VENDOR_WORDS.filter((word) =>
+		new RegExp(`\\b${escape_reg_exp(word)}\\b`, 'u').test(
+			description,
+		),
 	);
 }
 
-function escapeRegExp(value: string): string {
+function escape_reg_exp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function checkScripts(document: SkillDocument): Problem[] {
+function check_scripts(document: SkillDocument): Problem[] {
 	const problems: Problem[] = [];
-	const scriptsDir = join(document.dir, 'scripts');
-	const references = extractLocalReferences(document.body);
-	const scriptReferences = references.filter((reference) =>
-		reference.startsWith('scripts/'),
+	const scripts_dir = join(document.dir, 'scripts');
+	const references = extract_local_reference_locations(document);
+	const script_references = references.filter((reference) =>
+		reference.path.startsWith('scripts/'),
 	);
 
-	if (existsSync(scriptsDir)) {
-		for (const script of safeListFiles(scriptsDir)) {
-			const relativeScript = `scripts/${script}`;
+	if (existsSync(scripts_dir)) {
+		for (const script of safe_list_files(scripts_dir)) {
+			const relative_script = `scripts/${script}`;
 			if (
-				!document.body.includes(relativeScript) &&
+				!document.body.includes(relative_script) &&
 				!document.body.includes(script)
 			) {
 				problems.push({
 					severity: 'warn',
 					code: 'unreferenced-script',
-					message: `script is present but not referenced from SKILL.md: ${relativeScript}`,
+					message: `script is present but not referenced from SKILL.md: ${relative_script}`,
 					file: 'SKILL.md',
+					suggestion:
+						'Reference the script from SKILL.md or remove it if unused.',
 				});
 			}
 		}
 	}
 
-	for (const reference of scriptReferences) {
-		const fullPath = join(document.dir, reference);
+	for (const reference of script_references) {
+		const full_path = join(document.dir, reference.path);
 		if (
-			existsSync(fullPath) &&
-			isLikelyExecutable(reference) &&
-			!isExecutable(fullPath)
+			existsSync(full_path) &&
+			is_likely_executable(reference.path) &&
+			!is_executable(full_path)
 		) {
 			problems.push({
 				severity: 'warn',
 				code: 'script-not-executable',
-				message: `referenced script should be executable: ${reference}`,
+				message: `referenced script should be executable: ${reference.path}`,
 				file: 'SKILL.md',
+				line: reference.line,
+				column: reference.column,
+				suggestion: `Run chmod +x ${reference.path}, or document that it is not directly executable.`,
 			});
 		}
 	}
@@ -213,7 +213,7 @@ function checkScripts(document: SkillDocument): Problem[] {
 	return problems;
 }
 
-function safeListFiles(dir: string): string[] {
+function safe_list_files(dir: string): string[] {
 	try {
 		return readdirSync(dir).filter((entry) =>
 			statSync(join(dir, entry)).isFile(),
@@ -223,11 +223,11 @@ function safeListFiles(dir: string): string[] {
 	}
 }
 
-function isLikelyExecutable(path: string): boolean {
+function is_likely_executable(path: string): boolean {
 	return /\.(sh|bash|js|mjs|cjs|ts|py|rb|pl)$/iu.test(path);
 }
 
-function hasConcreteInstructions(body: string): boolean {
+function has_concrete_instructions(body: string): boolean {
 	return /\b(examples?|steps?|workflow|instructions?|checklist|process|run|do not|always|never)\b|```/iu.test(
 		body,
 	);
