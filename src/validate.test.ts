@@ -222,6 +222,77 @@ description: Analyze session history for reusable lessons and persist durable pr
 		expect(codes).not.toContain('missing-trigger-language');
 	});
 
+	it('accepts spec optional fields with valid shapes', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'spec-skill',
+			`---
+name: spec-skill
+description: Use when you need to validate optional Agent Skills spec fields.
+license: MIT
+compatibility: Requires network access.
+allowed-tools: Bash Read
+metadata:
+  com.example.category: validation
+---
+
+## Steps
+
+- Validate the skill.
+`,
+		);
+
+		const report = validate_paths(['spec-skill'], {
+			cwd: root,
+			quality: false,
+		});
+
+		expect(report.ok).toBe(true);
+		expect(report.summary.errors).toBe(0);
+	});
+
+	it('rejects spec optional fields with invalid shapes', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'invalid-spec-skill',
+			`---
+name: invalid-spec-skill
+description: Use when you need to validate optional Agent Skills spec fields.
+license:
+  name: MIT
+compatibility: ''
+allowed-tools:
+  - Bash
+metadata:
+  ok: 1
+---
+
+## Steps
+
+- Validate the skill.
+`,
+		);
+
+		const report = validate_paths(['invalid-spec-skill'], {
+			cwd: root,
+			quality: false,
+		});
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(codes).toEqual(
+			expect.arrayContaining([
+				'invalid-license',
+				'invalid-compatibility',
+				'invalid-allowed-tools',
+				'invalid-metadata',
+			]),
+		);
+	});
+
 	it('serializes JSON output shape', () => {
 		const root = tmp_root();
 		skill(root, 'good-skill', VALID_SKILL);

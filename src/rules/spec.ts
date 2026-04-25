@@ -122,20 +122,53 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 	}
 
 	if (
+		frontmatter.license !== undefined &&
+		typeof frontmatter.license !== 'string'
+	) {
+		problems.push({
+			severity: 'error',
+			code: 'invalid-license',
+			message: 'license must be a string when provided',
+			file: 'SKILL.md',
+			line: frontmatter_line(document, 'license'),
+			column: 1,
+			suggestion:
+				'Use a short license name, such as MIT, or a bundled license filename.',
+		});
+	}
+
+	if (
 		frontmatter.compatibility !== undefined &&
 		(typeof frontmatter.compatibility !== 'string' ||
-			frontmatter.compatibility.length > 500)
+			frontmatter.compatibility.length > 500 ||
+			frontmatter.compatibility.trim() === '')
 	) {
 		problems.push({
 			severity: 'error',
 			code: 'invalid-compatibility',
 			message:
-				'compatibility must be a string of 500 characters or fewer',
+				'compatibility must be a non-empty string of 500 characters or fewer',
 			file: 'SKILL.md',
 			line: frontmatter_line(document, 'compatibility'),
 			column: 1,
 			suggestion:
 				'Rewrite compatibility as a short string or remove the field.',
+		});
+	}
+
+	if (
+		frontmatter['allowed-tools'] !== undefined &&
+		typeof frontmatter['allowed-tools'] !== 'string'
+	) {
+		problems.push({
+			severity: 'error',
+			code: 'invalid-allowed-tools',
+			message: 'allowed-tools must be a space-separated string',
+			file: 'SKILL.md',
+			line: frontmatter_line(document, 'allowed-tools'),
+			column: 1,
+			suggestion:
+				'Rewrite allowed-tools as a string, e.g. allowed-tools: Bash Read.',
 		});
 	}
 

@@ -21,6 +21,7 @@ export interface Problem {
 export interface SkillFrontmatter {
 	name?: unknown;
 	description?: unknown;
+	license?: unknown;
 	compatibility?: unknown;
 	metadata?: unknown;
 	[key: string]: unknown;

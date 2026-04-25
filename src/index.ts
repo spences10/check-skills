@@ -110,7 +110,7 @@ const validate = defineCommand({
 		} else if (args.format === 'github') {
 			console.log(format_github_validation(report));
 		} else {
-			console.log(format_validation(report, args.quiet));
+			console.log(format_validation(report, args.quiet, args.strict));
 		}
 
 		process.exit(report.ok ? 0 : 1);
@@ -350,6 +350,7 @@ function positional_paths(values: string[]): string[] {
 function format_validation(
 	report: ValidationReport,
 	quiet = false,
+	strict = false,
 ): string {
 	const lines: string[] = [];
 	for (const skill of report.skills) {
@@ -373,9 +374,10 @@ function format_validation(
 
 	const skill_word =
 		report.summary.checked === 1 ? 'skill' : 'skills';
+	const failed_label = strict ? 'strict-failed' : 'failed';
 	lines.push(
 		'',
-		`${report.summary.checked} ${skill_word} checked: ${report.summary.failed} failed, ${report.summary.passed} passed, ${report.summary.warnings} warnings`,
+		`${report.summary.checked} ${skill_word} checked: ${report.summary.failed} ${failed_label}, ${report.summary.passed} passed, ${report.summary.warnings} warnings`,
 	);
 	return lines.join('\n');
 }

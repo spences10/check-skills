@@ -9,27 +9,42 @@ Agent Skills that follow the
 
 ## Usage
 
-Run directly with your package runner:
+`check-skills` is designed to be used inline in LLM coding sessions.
+After an agent creates or edits a skill, tell it to validate that
+skill:
 
-```bash
-pnpx check-skills validate ./my-skill
-pnpx check-skills validate ./skills --recursive
-pnpx check-skills validate ./my-skill --json
-pnpx check-skills validate ./my-skill --strict
-pnpx check-skills to-prompt ./skills --recursive
-pnpx check-skills stats ./skills --json
+```text
+Create a portable Agent Skill for <task>, then run:
+pnpx check-skills validate <skill-path>
 ```
 
-## Important for coding agents
+For repositories containing many skills, tell the agent to validate
+the repo recursively:
 
-Always run:
-
-```bash
-check-skills validate <skill-path>
+```text
+Validate all skills in this repo with:
+pnpx check-skills validate . --recursive --llm
 ```
 
-after creating or editing a skill. Fix all errors before finishing.
-Treat warnings as quality issues.
+Recommended inline commands:
+
+```bash
+# After creating or editing one skill
+pnpx check-skills validate ./my-skill --llm
+
+# After editing a skills repository
+pnpx check-skills validate . --recursive --llm
+
+# Machine-readable output for automation or agent parsing
+pnpx check-skills validate . --recursive --json
+
+# CI/spec-only validation against agentskills.io requirements
+pnpx check-skills validate . --recursive --no-quality
+```
+
+Fix all errors before finishing. Treat warnings as quality prompts
+during authoring; use `--no-quality` when you only want spec
+compliance.
 
 ## Commands
 
@@ -42,9 +57,21 @@ Options:
 - `--recursive` — discover skills recursively
 - `--strict` — treat warnings as failures
 - `--json` — machine-readable output
+- `--llm` — concise stable output for coding agents
+- `--quiet` — only show skills with problems
+- `--format github` — emit GitHub workflow annotations
 - `--agent <name>` — run optional adapter checks (`codex`,
   `claude-code`, `opencode`, `cursor`, `windsurf`, `pi`)
 - `--no-quality` — only run spec compliance checks
+
+### `explain <code>`
+
+Explains a validation rule and suggested fix:
+
+```bash
+check-skills explain missing-trigger-language
+check-skills explain invalid-allowed-tools --json
+```
 
 ### `to-prompt <path...>`
 
@@ -73,7 +100,8 @@ check-skills init my-skill --references --scripts --assets
 
 Errors include missing `SKILL.md`, invalid YAML frontmatter, missing
 required fields, invalid names, name/directory mismatch, overlong
-descriptions, invalid metadata, and missing local file references.
+descriptions, invalid `license`, invalid `compatibility`, invalid
+`allowed-tools`, invalid metadata, and missing local file references.
 
 Warnings include vague descriptions, missing trigger language,
 oversized `SKILL.md` files, vendor-specific wording in portable

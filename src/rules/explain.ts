@@ -58,11 +58,27 @@ export const RULES: RuleExplanation[] = [
 			'Shorten the description and move detail into the body.',
 	},
 	{
+		code: 'invalid-license',
+		severity: 'error',
+		description: 'The license field is not a string.',
+		suggestion:
+			'Use a short license name, such as MIT, or a bundled license filename.',
+	},
+	{
 		code: 'invalid-compatibility',
 		severity: 'error',
-		description: 'The compatibility field is not a short string.',
+		description:
+			'The compatibility field is not a non-empty short string.',
 		suggestion:
-			'Use a string of 500 characters or fewer, or remove the field.',
+			'Use a non-empty string of 500 characters or fewer, or remove the field.',
+	},
+	{
+		code: 'invalid-allowed-tools',
+		severity: 'error',
+		description:
+			'The allowed-tools field is not a space-separated string.',
+		suggestion:
+			'Rewrite allowed-tools as a string, e.g. allowed-tools: Bash Read.',
 	},
 	{
 		code: 'invalid-metadata',
