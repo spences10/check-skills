@@ -1,5 +1,12 @@
 # check-skills
 
+## 0.0.4
+
+### Patch Changes
+
+- efa2006: Add spec parity checks for optional fields and document
+  recommended validation modes.
+
 ## 0.0.3
 
 ### Patch Changes
