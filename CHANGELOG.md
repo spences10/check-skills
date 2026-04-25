@@ -1,5 +1,12 @@
 # check-skills
 
+## 0.0.3
+
+### Patch Changes
+
+- a756139: Improve LLM validation output with warning labels, quiet
+  mode, looser triggers, and better vendor guidance.
+
 ## 0.0.2
 
 ### Patch Changes
