@@ -39,17 +39,45 @@ export function doctor_path(
 	}
 
 	const parsed = parse_frontmatter(next);
-	if (
-		parsed.frontmatter &&
-		typeof parsed.frontmatter.name !== 'string'
-	) {
-		next = next.replace(/^---\n/u, `---\nname: ${basename(path)}\n`);
-		fixes.push({
-			path: skill_file,
-			code: 'add-name',
-			message: 'add name matching parent directory',
-			applied: write,
-		});
+	if (parsed.frontmatter) {
+		const expected_name = basename(path);
+		if (typeof parsed.frontmatter.name !== 'string') {
+			next = next.replace(/^---\n/u, `---\nname: ${expected_name}\n`);
+			fixes.push({
+				path: skill_file,
+				code: 'add-name',
+				message: 'add name matching parent directory',
+				applied: write,
+			});
+		} else if (parsed.frontmatter.name !== expected_name) {
+			next = replace_frontmatter_field(next, 'name', expected_name);
+			fixes.push({
+				path: skill_file,
+				code: 'fix-name-mismatch',
+				message: 'replace name with parent directory',
+				applied: write,
+			});
+		}
+
+		if (
+			typeof parsed.frontmatter.description === 'string' &&
+			!has_trigger_language(parsed.frontmatter.description)
+		) {
+			const description = add_trigger_language(
+				parsed.frontmatter.description,
+			);
+			next = replace_frontmatter_field(
+				next,
+				'description',
+				description,
+			);
+			fixes.push({
+				path: skill_file,
+				code: 'add-trigger-language',
+				message: 'rewrite description with trigger language',
+				applied: write,
+			});
+		}
 	}
 
 	if (write && next !== original) {
@@ -67,4 +95,41 @@ function starts_with_open_frontmatter(content: string): boolean {
 		content.split(/\r?\n/).filter((line) => line.trim() === '---')
 			.length === 1
 	);
+}
+
+function replace_frontmatter_field(
+	content: string,
+	field: string,
+	value: string,
+): string {
+	const yaml_value = yaml_plain_scalar(value)
+		? value
+		: JSON.stringify(value);
+	return content.replace(
+		new RegExp(`^${field}:.*$`, 'mu'),
+		`${field}: ${yaml_value}`,
+	);
+}
+
+function yaml_plain_scalar(value: string): boolean {
+	return (
+		value.trim() === value &&
+		value.length > 0 &&
+		!/[\n\r:#{}[\],&*?|>'"%@`]/u.test(value)
+	);
+}
+
+function has_trigger_language(description: string): boolean {
+	return /\b(use when|use for|use to|when asked|when the user|run when|trigger)\b/iu.test(
+		description,
+	);
+}
+
+function add_trigger_language(description: string): string {
+	const trimmed = description.trim();
+	return `Use when you need ${lowercase_first(trimmed)}`;
+}
+
+function lowercase_first(value: string): string {
+	return value.charAt(0).toLowerCase() + value.slice(1);
 }
