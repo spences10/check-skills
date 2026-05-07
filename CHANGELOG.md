@@ -1,5 +1,12 @@
 # check-skills
 
+## 0.0.5
+
+### Patch Changes
+
+- 63773a9: Fix doctor to repair skill name mismatches and add missing
+  trigger language to descriptions.
+
 ## 0.0.4
 
 ### Patch Changes
