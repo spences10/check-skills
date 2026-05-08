@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 interface PackFile {
@@ -35,7 +37,10 @@ describe('package smoke', () => {
 	});
 
 	it('loads the built public API', async () => {
-		const api = (await import('../dist/api.js')) as {
+		const api_url = pathToFileURL(
+			join(process.cwd(), 'dist/api.js'),
+		).href;
+		const api = (await import(api_url)) as {
 			validate_paths?: unknown;
 			doctor_path?: unknown;
 			skills_to_prompt?: unknown;
