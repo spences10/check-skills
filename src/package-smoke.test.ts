@@ -34,6 +34,18 @@ describe('package smoke', () => {
 		}
 	});
 
+	it('loads the built public API', async () => {
+		const api = (await import('../dist/api.js')) as {
+			validate_paths?: unknown;
+			doctor_path?: unknown;
+			skills_to_prompt?: unknown;
+		};
+
+		expect(typeof api.validate_paths).toBe('function');
+		expect(typeof api.doctor_path).toBe('function');
+		expect(typeof api.skills_to_prompt).toBe('function');
+	});
+
 	it('runs the packed CLI help', () => {
 		const output = execFileSync(
 			process.execPath,

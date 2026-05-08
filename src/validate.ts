@@ -19,6 +19,7 @@ import type {
 	Problem,
 	SkillDocument,
 	SkillResult,
+	SkillStats,
 	ValidateOptions,
 	ValidationReport,
 } from './types.js';
@@ -250,7 +251,41 @@ export function validate_skill_dir(
 		name,
 		ok: errors.length === 0,
 		problems,
+		stats: collect_skill_stats(document),
 	};
+}
+
+function collect_skill_stats(document: SkillDocument): SkillStats {
+	const description =
+		typeof document.frontmatter?.description === 'string'
+			? document.frontmatter.description
+			: '';
+	return {
+		line_count: document.line_count,
+		body_word_count: word_count(document.body),
+		estimated_tokens: estimate_tokens(document.content),
+		description_length: description.length,
+		description_estimated_tokens: estimate_tokens(description),
+		code_blocks: Math.floor(
+			(document.body.match(/```/gu)?.length ?? 0) / 2,
+		),
+		sections: document.body.match(/^#{1,6}\s+/gmu)?.length ?? 0,
+		long_paragraphs: count_long_paragraphs(document.body),
+	};
+}
+
+function word_count(text: string): number {
+	return text.split(/\s+/u).filter(Boolean).length;
+}
+
+function estimate_tokens(text: string): number {
+	return Math.ceil(text.length / 4);
+}
+
+function count_long_paragraphs(body: string): number {
+	return body
+		.split(/\n\s*\n/u)
+		.filter((paragraph) => word_count(paragraph) > 140).length;
 }
 
 export function validate_paths(

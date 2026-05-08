@@ -9,11 +9,24 @@ export const LLM_BLOCK = `IMPORTANT FOR LLMs:
   Fix all errors before finishing. Treat warnings as quality issues.`;
 
 const EXAMPLES_SECTION = `Examples:
+  # Validate one skill after editing
   pnpx check-skills validate ./ecosystem-guide
+
+  # Validate a repository recursively
   pnpx check-skills validate ./skills --recursive
-  pnpx check-skills validate . --recursive --llm
-  pnpx check-skills stats ./skills --json
+
+  # Run spec-only checks for CI
+  pnpx check-skills validate . --recursive --no-quality --format github
+
+  # Generate a prompt block for agent harnesses
   pnpx check-skills to-prompt ./skills --recursive
+
+  # Plan and apply safe repairs
+  pnpx check-skills doctor ./ecosystem-guide
+  pnpx check-skills doctor ./ecosystem-guide --write
+
+  # Inspect stats and rule guidance
+  pnpx check-skills stats ./skills --json
   pnpx check-skills explain missing-trigger-language`;
 
 export async function show_usage_with_guidance<

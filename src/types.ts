@@ -39,11 +39,23 @@ export interface SkillDocument {
 	frontmatter_error?: string;
 }
 
+export interface SkillStats {
+	line_count: number;
+	body_word_count: number;
+	estimated_tokens: number;
+	description_length: number;
+	description_estimated_tokens: number;
+	code_blocks: number;
+	sections: number;
+	long_paragraphs: number;
+}
+
 export interface SkillResult {
 	path: string;
 	name?: string;
 	ok: boolean;
 	problems: Problem[];
+	stats: SkillStats;
 }
 
 export interface ValidationSummary {

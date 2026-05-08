@@ -1,4 +1,8 @@
-import type { Problem, ValidationReport } from '../types.js';
+import type {
+	Problem,
+	SkillStats,
+	ValidationReport,
+} from '../types.js';
 
 export function format_validation(
 	report: ValidationReport,
@@ -11,6 +15,9 @@ export function format_validation(
 
 		const marker = skill.ok ? '✓' : '✖';
 		lines.push(`${marker} ${skill.path}`);
+		if (skill.problems.length > 0) {
+			lines.push(`  stats: ${format_stats_summary(skill.stats)}`);
+		}
 		for (const problem of skill.problems) {
 			lines.push(`  ${format_problem(problem)}`);
 			if (problem.suggestion)
@@ -74,6 +81,10 @@ export function format_github_validation(
 			}),
 		)
 		.join('\n');
+}
+
+export function format_stats_summary(stats: SkillStats): string {
+	return `${stats.body_word_count} words, ~${stats.estimated_tokens} tokens, ${stats.line_count} lines, ${stats.sections} sections, ${stats.code_blocks} code blocks, ${stats.long_paragraphs} long paragraphs`;
 }
 
 export function format_problem(problem: Problem): string {

@@ -85,7 +85,11 @@ duplicate names, and asset/reference/script usage.
 
 ### `doctor <path...>`
 
-Plans safe automatic fixes. Use `--write` to apply them.
+Plans safe automatic fixes. Dry-run planning is the default; use
+`--write` to apply deterministic low-risk edits. Doctor reports
+include stable fix codes and before/after snippets in `--json` output.
+Unsafe or prose-heavy cases are reported as manual suggestions instead
+of being rewritten.
 
 ### `init <name>`
 
@@ -101,13 +105,22 @@ check-skills init my-skill --references --scripts --assets
 `check-skills` also exposes a typed ESM API:
 
 ```ts
-import { validate_paths } from 'check-skills';
+import { validate_paths } from "check-skills";
 
-const report = validate_paths(['.'], { recursive: true });
+const report = validate_paths(["."], { recursive: true });
 ```
 
 The CLI entrypoint is available as `check-skills/cli` for tooling that
 needs to resolve it explicitly.
+
+Public exports include:
+
+- `validate_paths`, `validate_skill_dir`, `discover_skill_dirs`
+- `read_skill_document`, `parse_frontmatter`
+- `doctor_path`
+- `collect_prompt_skills`, `skills_to_prompt`
+- `get_stats`, `format_stats`
+- public result, problem, validation, stats, and prompt types
 
 ## What it checks
 
@@ -116,10 +129,19 @@ required fields, invalid names, name/directory mismatch, overlong
 descriptions, invalid `license`, invalid `compatibility`, invalid
 `allowed-tools`, invalid metadata, and missing local file references.
 
-Warnings include vague descriptions, missing trigger language,
-oversized `SKILL.md` files, vendor-specific wording in portable
-skills, unreferenced scripts, non-executable referenced scripts, and
-missing concrete instructions.
+Validation results include per-skill stats for line count, body word
+count, estimated tokens, description length/tokens, code blocks,
+sections, and long paragraphs. Human output shows those stats when a
+skill has findings; JSON output always includes them.
+
+Warnings include vague descriptions, list-heavy descriptions,
+first/second-person wording, missing trigger language, oversized
+`SKILL.md` files, too many sections or code blocks, long paragraphs,
+TODO/template placeholders, low description/body keyword overlap,
+vendor-specific wording in portable skills, empty resource
+directories, orphaned reference/script/asset files, unreferenced
+scripts, non-executable referenced scripts, and missing concrete
+instructions.
 
 ## Relationship to agentskills.io
 
