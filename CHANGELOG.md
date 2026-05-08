@@ -1,5 +1,16 @@
 # check-skills
 
+## 0.0.7
+
+### Patch Changes
+
+- 856be17: Make doctor safer with fix snippets and manual suggestions,
+  and expand CLI smoke coverage.
+- 929723e: Expose pure command result helpers for focused
+  command-module tests.
+- b988218: Add validation stats to results and improve API, help, and
+  output coverage.
+
 ## 0.0.6
 
 ### Patch Changes
