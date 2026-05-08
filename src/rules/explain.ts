@@ -58,6 +58,14 @@ export const RULES: RuleExplanation[] = [
 			'Shorten the description and move detail into the body.',
 	},
 	{
+		code: 'multiline-description',
+		severity: 'error',
+		description:
+			'The description uses folded, literal, or multiline YAML that skill loaders may not recognize.',
+		suggestion:
+			'Rewrite the description as a single-line scalar: description: Use when...',
+	},
+	{
 		code: 'invalid-license',
 		severity: 'error',
 		description: 'The license field is not a string.',

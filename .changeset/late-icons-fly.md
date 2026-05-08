@@ -1,5 +1,6 @@
 ---
-"check-skills": patch
+'check-skills': patch
 ---
 
-Refactor CLI structure, add public API exports, smoke tests, and harden stats frontmatter parsing.
+Refactor CLI structure, add public API exports, smoke tests, and
+harden stats frontmatter parsing.

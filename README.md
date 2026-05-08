@@ -101,9 +101,9 @@ check-skills init my-skill --references --scripts --assets
 `check-skills` also exposes a typed ESM API:
 
 ```ts
-import { validate_paths } from "check-skills";
+import { validate_paths } from 'check-skills';
 
-const report = validate_paths(["."], { recursive: true });
+const report = validate_paths(['.'], { recursive: true });
 ```
 
 The CLI entrypoint is available as `check-skills/cli` for tooling that

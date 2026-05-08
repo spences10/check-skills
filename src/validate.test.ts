@@ -293,6 +293,56 @@ metadata:
 		);
 	});
 
+	it('rejects folded YAML descriptions because skill loaders do not reliably recognize them', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'folded-skill',
+			`---
+name: folded-skill
+description: >
+  Use when you need to validate folded descriptions.
+---
+
+## Steps
+- Validate.
+`,
+		);
+
+		const report = validate_paths(['folded-skill'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(report.ok).toBe(false);
+		expect(codes).toContain('multiline-description');
+	});
+
+	it('rejects indented multiline YAML descriptions', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'multiline-skill',
+			`---
+name: multiline-skill
+description: Use when you need
+  to validate multiline descriptions.
+---
+
+## Steps
+- Validate.
+`,
+		);
+
+		const report = validate_paths(['multiline-skill'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(report.ok).toBe(false);
+		expect(codes).toContain('multiline-description');
+	});
+
 	it('serializes JSON output shape', () => {
 		const root = tmp_root();
 		skill(root, 'good-skill', VALID_SKILL);

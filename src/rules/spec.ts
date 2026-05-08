@@ -108,17 +108,34 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 			suggestion:
 				'Add a description with trigger language, e.g. "Use when...".',
 		});
-	} else if (frontmatter.description.length > 1024) {
-		problems.push({
-			severity: 'error',
-			code: 'description-too-long',
-			message: 'description must be 1024 characters or fewer',
-			file: 'SKILL.md',
-			line: frontmatter_line(document, 'description'),
-			column: 1,
-			suggestion:
-				'Shorten the description and move detail into the body.',
-		});
+	} else {
+		const line = frontmatter_line(document, 'description');
+		if (is_multiline_description(document.frontmatter_raw ?? '')) {
+			problems.push({
+				severity: 'error',
+				code: 'multiline-description',
+				message:
+					'description must be a single-line YAML scalar; folded or multiline descriptions are not reliably recognized by skill loaders',
+				file: 'SKILL.md',
+				line,
+				column: 1,
+				suggestion:
+					'Rewrite description on one line, e.g. description: Use when...',
+			});
+		}
+
+		if (frontmatter.description.length > 1024) {
+			problems.push({
+				severity: 'error',
+				code: 'description-too-long',
+				message: 'description must be 1024 characters or fewer',
+				file: 'SKILL.md',
+				line,
+				column: 1,
+				suggestion:
+					'Shorten the description and move detail into the body.',
+			});
+		}
 	}
 
 	if (
@@ -199,6 +216,28 @@ function is_string_map(value: unknown): boolean {
 		!Array.isArray(value) &&
 		Object.values(value).every((item) => typeof item === 'string')
 	);
+}
+
+function is_multiline_description(frontmatter_raw: string): boolean {
+	const lines = frontmatter_raw.split(/\r?\n/);
+	const index = lines.findIndex((line) =>
+		/^description\s*:/u.test(line),
+	);
+	if (index === -1) return false;
+
+	const first_value = lines[index]
+		?.replace(/^description\s*:/u, '')
+		.trim();
+	if (!first_value || first_value === '>' || first_value === '|') {
+		return true;
+	}
+
+	for (const line of lines.slice(index + 1)) {
+		if (/^\S[^:]*:/u.test(line)) return false;
+		if (/^\s+\S/u.test(line)) return true;
+	}
+
+	return false;
 }
 
 export function check_referenced_files(

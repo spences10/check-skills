@@ -139,7 +139,11 @@ export function parse_frontmatter(
 	content: string,
 ): Pick<
 	SkillDocument,
-	'frontmatter' | 'body' | 'body_start_line' | 'frontmatter_error'
+	| 'frontmatter'
+	| 'frontmatter_raw'
+	| 'body'
+	| 'body_start_line'
+	| 'frontmatter_error'
 > {
 	const lines = content.split(/\r?\n/);
 	if (lines[0]?.trim() !== '---') {
@@ -182,6 +186,7 @@ export function parse_frontmatter(
 
 		return {
 			frontmatter: parsed as SkillDocument['frontmatter'],
+			frontmatter_raw: raw_yaml,
 			body: lines.slice(end_index + 1).join('\n'),
 			body_start_line: end_index + 2,
 		};

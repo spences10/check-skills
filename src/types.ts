@@ -31,6 +31,7 @@ export interface SkillDocument {
 	dir: string;
 	skill_file: string;
 	frontmatter: SkillFrontmatter | null;
+	frontmatter_raw?: string;
 	body: string;
 	line_count: number;
 	body_start_line: number;

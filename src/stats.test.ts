@@ -19,11 +19,10 @@ describe('get_stats', () => {
 		const root = tmp_root();
 		skill(
 			root,
-			'folded-skill',
+			'quoted-skill',
 			`---
-name: folded-skill
-description: >
-  Use when you need to validate skill stats from folded YAML.
+name: quoted-skill
+description: "Use when: you need to validate quoted description stats."
 ---
 
 ## Steps
@@ -35,8 +34,8 @@ description: >
 		const report = get_stats('.', { cwd: root });
 
 		expect(report.longest_descriptions[0]).toMatchObject({
-			path: 'folded-skill',
-			length: 60,
+			path: 'quoted-skill',
+			length: 56,
 		});
 	});
 });
