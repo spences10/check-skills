@@ -1,4 +1,4 @@
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, normalize } from 'node:path';
 import type { Problem, SkillDocument } from '../types.js';
 
@@ -228,6 +228,7 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 	}
 
 	problems.push(...check_referenced_files(document));
+	problems.push(...check_file_structure(document));
 	return problems;
 }
 
@@ -283,9 +284,33 @@ export function check_referenced_files(
 	const references = extract_local_reference_locations(document);
 
 	for (const reference of references) {
+		if (reference.path.includes('\\')) {
+			problems.push({
+				severity: 'error',
+				code: 'invalid-reference-path',
+				message: `referenced path should use forward slashes: ${reference.path}`,
+				file: 'SKILL.md',
+				line: reference.line,
+				column: reference.column,
+				suggestion:
+					'Rewrite local skill paths with / separators and no backslash escapes.',
+			});
+			continue;
+		}
+
 		const target = normalize(join(document.dir, reference.path));
 		const root = normalize(document.dir);
 		if (target !== root && !target.startsWith(`${root}/`)) {
+			problems.push({
+				severity: 'error',
+				code: 'unsafe-reference-path',
+				message: `referenced path leaves the skill directory: ${reference.path}`,
+				file: 'SKILL.md',
+				line: reference.line,
+				column: reference.column,
+				suggestion:
+					'Keep local references inside the skill directory.',
+			});
 			continue;
 		}
 
@@ -304,6 +329,117 @@ export function check_referenced_files(
 	}
 
 	return problems;
+}
+
+function check_file_structure(document: SkillDocument): Problem[] {
+	const problems: Problem[] = [];
+	const references = new Set(
+		extract_local_reference_locations(document).map((reference) =>
+			normalize_reference_path(reference.path),
+		),
+	);
+
+	for (const folder of ['references', 'scripts', 'assets']) {
+		const root = join(document.dir, folder);
+		if (!existsSync(root)) continue;
+
+		const files = list_nested_files(root).map((file) =>
+			normalize_reference_path(`${folder}/${file}`),
+		);
+
+		if (files.length === 0) {
+			problems.push({
+				severity: 'warn',
+				code: `empty-${folder}-directory`,
+				message: `${folder}/ exists but contains no files`,
+				file: 'SKILL.md',
+				suggestion: `Remove ${folder}/ or add files referenced from SKILL.md.`,
+			});
+			continue;
+		}
+
+		for (const file of files) {
+			if (!references.has(file) && !document.body.includes(file)) {
+				problems.push({
+					severity: 'warn',
+					code: `orphaned-${folder}-file`,
+					message: `file is present but not referenced from SKILL.md: ${file}`,
+					file: 'SKILL.md',
+					suggestion: `Reference ${file} from SKILL.md or remove it if unused.`,
+				});
+			}
+		}
+	}
+
+	for (const file of list_root_markdown_files(document.dir)) {
+		if (!references.has(file) && !document.body.includes(file)) {
+			problems.push({
+				severity: 'warn',
+				code: 'orphaned-root-markdown',
+				message: `root Markdown file is not referenced from SKILL.md: ${file}`,
+				file: 'SKILL.md',
+				suggestion:
+					'Reference the Markdown file, move it under references/, or remove it.',
+			});
+		}
+	}
+
+	return problems;
+}
+
+function normalize_reference_path(path: string): string {
+	return path.replace(/^\.\//u, '').replaceAll('\\', '/');
+}
+
+function list_nested_files(root: string): string[] {
+	const files: string[] = [];
+	for (const entry of safe_read_dir(root)) {
+		const full_path = join(root, entry);
+		if (safe_is_directory(full_path)) {
+			for (const child of list_nested_files(full_path)) {
+				files.push(`${entry}/${child}`);
+			}
+		} else if (safe_is_file(full_path)) {
+			files.push(entry);
+		}
+	}
+	return files.sort();
+}
+
+function list_root_markdown_files(dir: string): string[] {
+	return safe_read_dir(dir)
+		.filter(
+			(entry) =>
+				entry !== 'SKILL.md' &&
+				entry !== 'skill.md' &&
+				/\.md$/iu.test(entry) &&
+				safe_is_file(join(dir, entry)),
+		)
+		.sort();
+}
+
+function safe_read_dir(path: string): string[] {
+	try {
+		return readdirSync(path);
+	} catch {
+		return [];
+	}
+}
+
+function safe_is_directory(path: string): boolean {
+	try {
+		return statSync(path).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+function safe_is_file(path: string): boolean {
+	try {
+		return statSync(path).isFile();
+	} catch {
+		return false;
+	}
 }
 
 export function extract_local_references(markdown: string): string[] {
@@ -350,7 +486,7 @@ function extract_local_references_from_body(
 		}
 
 		const resource_path =
-			/(?:^|[\s("'`])((?:references|scripts|assets)\/[^\s)"'`<>]+)/g;
+			/(?:^|[\s("'`])((?:references|scripts|assets)[\\/][^\s)"'`<>]+)/g;
 		for (const match of line.matchAll(resource_path)) {
 			const raw = match[1] ?? '';
 			add_reference(
@@ -383,7 +519,10 @@ function add_reference(
 		cleaned.startsWith('../') ||
 		cleaned.startsWith('references/') ||
 		cleaned.startsWith('scripts/') ||
-		cleaned.startsWith('assets/')
+		cleaned.startsWith('assets/') ||
+		cleaned.startsWith('references\\') ||
+		cleaned.startsWith('scripts\\') ||
+		cleaned.startsWith('assets\\')
 	) {
 		references.push({ path: cleaned, line, column });
 	}

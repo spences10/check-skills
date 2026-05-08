@@ -31,17 +31,47 @@ export function run_quality_rules(
 			: '';
 
 	if (description) {
-		if (is_vague_description(description)) {
+		const vague_term = vague_description_term(description);
+		if (vague_term) {
 			problems.push({
 				severity: 'warn',
 				code: 'vague-description',
-				message:
-					'description is too vague for reliable agent triggering',
+				message: `description is too vague for reliable agent triggering: ${vague_term}`,
 				file: 'SKILL.md',
 				line: frontmatter_line(document, 'description'),
 				column: 1,
 				suggestion:
 					'Rewrite the description with concrete trigger language and task terms.',
+			});
+		}
+
+		if (is_list_bloat(description)) {
+			problems.push({
+				severity: 'warn',
+				code: 'description-list-bloat',
+				message: 'description has a long comma-heavy trigger list',
+				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Group related triggers into fewer concrete phrases and move detail into the body.',
+			});
+		}
+
+		if (
+			/\b(I|me|my|mine|we|our|ours|you|your|yours)\b/u.test(
+				description,
+			)
+		) {
+			problems.push({
+				severity: 'warn',
+				code: 'description-person-pronoun',
+				message: 'description uses first- or second-person wording',
+				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Prefer neutral task language such as "Use when the user asks...".',
 			});
 		}
 
@@ -74,17 +104,99 @@ export function run_quality_rules(
 		});
 	}
 
-	if (document.body.split(/\s+/).filter(Boolean).length > 2500) {
+	const body_words = document.body
+		.split(/\s+/)
+		.filter(Boolean).length;
+	if (body_words > 2500) {
 		problems.push({
 			severity: 'warn',
 			code: 'body-too-long',
-			message:
-				'SKILL.md body is very long; move detail into references/',
+			message: `SKILL.md body is very long (${body_words} words, about ${estimate_tokens(document.body)} tokens); move detail into references/`,
 			file: 'SKILL.md',
 			line: document.body_start_line,
 			column: 1,
 			suggestion:
 				'Extract detailed examples or background material into references/.',
+		});
+	}
+
+	const code_blocks = (document.body.match(/```/gu)?.length ?? 0) / 2;
+	if (code_blocks > 8) {
+		problems.push({
+			severity: 'warn',
+			code: 'too-many-code-blocks',
+			message: `SKILL.md contains many code blocks: ${Math.floor(code_blocks)}`,
+			file: 'SKILL.md',
+			line: document.body_start_line,
+			column: 1,
+			suggestion:
+				'Move extended examples into references/ and keep SKILL.md focused on when and how to use the skill.',
+		});
+	}
+
+	const headings = document.body.match(/^#{1,6}\s+/gmu)?.length ?? 0;
+	if (headings > 12) {
+		problems.push({
+			severity: 'warn',
+			code: 'too-many-sections',
+			message: `SKILL.md has many sections: ${headings}`,
+			file: 'SKILL.md',
+			line: document.body_start_line,
+			column: 1,
+			suggestion:
+				'Collapse minor sections or move detailed material into references/.',
+		});
+	}
+
+	for (const paragraph of long_paragraph_lines(
+		document.body,
+		document.body_start_line,
+	)) {
+		problems.push({
+			severity: 'warn',
+			code: 'long-paragraph',
+			message: 'paragraph is long and hard to scan',
+			file: 'SKILL.md',
+			line: paragraph,
+			column: 1,
+			suggestion:
+				'Break long prose into short paragraphs, bullets, or steps.',
+		});
+	}
+
+	if (
+		/\b(TODO|TBD|FIXME|replace me|lorem ipsum|your skill|placeholder)\b/iu.test(
+			document.body,
+		)
+	) {
+		problems.push({
+			severity: 'warn',
+			code: 'template-placeholder',
+			message:
+				'SKILL.md appears to contain a TODO or template placeholder',
+			file: 'SKILL.md',
+			line: document.body_start_line,
+			column: 1,
+			suggestion:
+				'Replace template placeholders with finished skill instructions.',
+		});
+	}
+
+	if (
+		description &&
+		document.body.trim() &&
+		keyword_overlap(description, document.body) < 0.12
+	) {
+		problems.push({
+			severity: 'warn',
+			code: 'low-description-body-overlap',
+			message:
+				'description trigger terms have low overlap with the body',
+			file: 'SKILL.md',
+			line: frontmatter_line(document, 'description'),
+			column: 1,
+			suggestion:
+				'Use consistent task terms in both the description and body so agents can connect triggers to instructions.',
 		});
 	}
 
@@ -124,14 +236,91 @@ export function run_quality_rules(
 	return problems;
 }
 
-function is_vague_description(description: string): boolean {
+function vague_description_term(
+	description: string,
+): string | undefined {
 	const normalized = description.toLowerCase();
+	if (normalized.length < 28) return 'too short';
+	const match = normalized.match(
+		/^(helps?|assists?|supports?)\s+(with|to|you)\b|^(useful|helpful)\s+for\b|\b(stuff|things|various|etc\.?|general)\b/u,
+	);
+	return match?.[0];
+}
+
+function is_list_bloat(description: string): boolean {
 	return (
-		normalized.length < 28 ||
-		/^(helps?|assists?|supports?)\s+(with|to|you)\b/u.test(
-			normalized,
-		) ||
-		/^(useful|helpful)\s+for\b/u.test(normalized)
+		description.length > 180 && description.split(',').length >= 6
+	);
+}
+
+function estimate_tokens(text: string): number {
+	return Math.ceil(text.length / 4);
+}
+
+function long_paragraph_lines(
+	body: string,
+	start_line: number,
+): number[] {
+	const lines = body.split(/\r?\n/);
+	const result: number[] = [];
+	let paragraph = '';
+	let paragraph_start = 0;
+	let in_fence = false;
+
+	lines.forEach((line, index) => {
+		if (/^\s*```/u.test(line)) in_fence = !in_fence;
+		if (in_fence || /^\s*($|[#*-]|\d+\.)/u.test(line)) {
+			if (paragraph.split(/\s+/u).filter(Boolean).length > 140) {
+				result.push(start_line + paragraph_start);
+			}
+			paragraph = '';
+			paragraph_start = index + 1;
+			return;
+		}
+		if (!paragraph) paragraph_start = index;
+		paragraph += ` ${line.trim()}`;
+	});
+
+	if (paragraph.split(/\s+/u).filter(Boolean).length > 140) {
+		result.push(start_line + paragraph_start);
+	}
+	return result;
+}
+
+function keyword_overlap(description: string, body: string): number {
+	const description_words = keywords(description);
+	if (description_words.size === 0) return 1;
+	const body_words = keywords(body);
+	let matches = 0;
+	for (const word of description_words) {
+		if (body_words.has(word)) matches += 1;
+	}
+	return matches / description_words.size;
+}
+
+function keywords(text: string): Set<string> {
+	const stop = new Set([
+		'when',
+		'with',
+		'need',
+		'user',
+		'asks',
+		'asked',
+		'use',
+		'using',
+		'the',
+		'and',
+		'for',
+		'that',
+		'this',
+		'into',
+		'from',
+		'your',
+	]);
+	return new Set(
+		(text.toLowerCase().match(/[a-z][a-z-]{3,}/gu) ?? [])
+			.map((word) => word.replace(/s$/u, ''))
+			.filter((word) => !stop.has(word)),
 	);
 }
 

@@ -404,6 +404,85 @@ description: Use when you need
 		expect(codes).toContain('multiline-description');
 	});
 
+	it('reports unsafe paths, orphaned files, and empty skill directories', () => {
+		const root = tmp_root();
+		const dir = skill(
+			root,
+			'structure-skill',
+			`---
+name: structure-skill
+description: Use when you need to validate skill file references and assets.
+---
+
+## Steps
+
+Read [escape](../outside.md) and [missing](references/missing.md).
+Use assets\\bad.png only as a bad example.
+`,
+		);
+		mkdirSync(join(dir, 'references'), { recursive: true });
+		writeFileSync(join(dir, 'references', 'unused.md'), '# unused');
+		mkdirSync(join(dir, 'scripts'), { recursive: true });
+		mkdirSync(join(dir, 'assets'), { recursive: true });
+		writeFileSync(join(dir, 'extra.md'), '# extra');
+
+		const report = validate_paths(['structure-skill'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(codes).toEqual(
+			expect.arrayContaining([
+				'unsafe-reference-path',
+				'invalid-reference-path',
+				'missing-reference',
+				'orphaned-references-file',
+				'empty-scripts-directory',
+				'empty-assets-directory',
+				'orphaned-root-markdown',
+			]),
+		);
+	});
+
+	it('reports richer quality feedback without turning warnings into errors', () => {
+		const root = tmp_root();
+		const long_paragraph = Array.from(
+			{ length: 150 },
+			(_, index) => `word${index}`,
+		).join(' ');
+		skill(
+			root,
+			'quality-skill',
+			`---
+name: quality-skill
+description: Helps with stuff, alpha work, beta work, gamma work, delta work, epsilon work, zeta work, eta work, theta work, iota work, kappa work, lambda work, mu work, nu work, xi work, omicron work.
+---
+
+# quality-skill
+
+TODO replace me.
+
+${long_paragraph}
+`,
+		);
+
+		const report = validate_paths(['quality-skill'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(report.ok).toBe(true);
+		expect(codes).toEqual(
+			expect.arrayContaining([
+				'vague-description',
+				'description-list-bloat',
+				'template-placeholder',
+				'long-paragraph',
+				'low-description-body-overlap',
+			]),
+		);
+	});
+
 	it('serializes JSON output shape', () => {
 		const root = tmp_root();
 		skill(root, 'good-skill', VALID_SKILL);
