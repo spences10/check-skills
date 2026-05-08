@@ -19,9 +19,14 @@ export interface ValidateCommandOptions {
 	quality?: boolean;
 }
 
-export function validate_command(
+export interface CommandResult {
+	exit_code: number;
+	stdout: string;
+}
+
+export function validate_command_result(
 	options: ValidateCommandOptions,
-): void {
+): CommandResult {
 	const report = validate_paths(positional_paths(options.paths), {
 		recursive: options.recursive,
 		strict: options.strict,
@@ -29,17 +34,26 @@ export function validate_command(
 		agent: options.agent,
 	});
 
-	if (options.json) console.log(JSON.stringify(report, null, 2));
+	let stdout: string;
+	if (options.json) stdout = JSON.stringify(report, null, 2);
 	else if (options.llm)
-		console.log(
-			format_llm_validation(report, options.strict, options.quiet),
+		stdout = format_llm_validation(
+			report,
+			options.strict,
+			options.quiet,
 		);
 	else if (options.format === 'github')
-		console.log(format_github_validation(report));
+		stdout = format_github_validation(report);
 	else
-		console.log(
-			format_validation(report, options.quiet, options.strict),
-		);
+		stdout = format_validation(report, options.quiet, options.strict);
 
-	process.exit(report.ok ? 0 : 1);
+	return { exit_code: report.ok ? 0 : 1, stdout };
+}
+
+export function validate_command(
+	options: ValidateCommandOptions,
+): void {
+	const result = validate_command_result(options);
+	console.log(result.stdout);
+	process.exit(result.exit_code);
 }
