@@ -1,6 +1,6 @@
 {
 	"name": "check-skills",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "Vendor-neutral CLI for validating portable Agent Skills",
 	"keywords": [
 		"agent-skills",

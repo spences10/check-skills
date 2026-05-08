@@ -1,5 +1,18 @@
 # check-skills
 
+## 0.0.6
+
+### Patch Changes
+
+- b4c9b4c: Align spec validation with skills-ref: lowercase skill.md,
+  Unicode names, and unknown frontmatter rejection.
+- daaa3d8: Refactor CLI structure, add public API exports, smoke
+  tests, and harden stats frontmatter parsing.
+- 356116c: Reject folded and multiline skill descriptions because
+  loaders require single-line YAML description fields.
+- f85e015: Deepen skill validation with richer quality feedback and
+  expanded file/reference structure checks.
+
 ## 0.0.5
 
 ### Patch Changes
