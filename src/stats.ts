@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ValidateOptions } from './types.js';
-import { validate_paths } from './validate.js';
+import { read_skill_document, validate_paths } from './validate.js';
 
 export interface StatsReport {
 	skills: number;
@@ -42,18 +42,15 @@ export function get_stats(
 		warnings: report.summary.warnings,
 		longest_descriptions: report.skills
 			.map((skill) => {
-				const description = String(
-					read_frontmatter_value(
-						skill.path,
-						'description',
-						options.cwd,
-					),
+				const document = read_skill_document(
+					join(options.cwd ?? process.cwd(), skill.path),
 				);
+				const description = document.frontmatter?.description;
 				return {
 					path: skill.path,
 					name: skill.name,
 					length:
-						description === 'undefined' ? 0 : description.length,
+						typeof description === 'string' ? description.length : 0,
 				};
 			})
 			.sort((a, b) => b.length - a.length)
@@ -90,21 +87,6 @@ export function get_stats(
 			0,
 		),
 	};
-}
-
-function read_frontmatter_value(
-	skill_path: string,
-	key: string,
-	cwd = process.cwd(),
-): unknown {
-	const full_path = join(cwd, skill_path, 'SKILL.md');
-	try {
-		const raw = readFileSync(full_path, 'utf-8');
-		const match = raw.match(new RegExp(`^${key}:\\s*(.+)$`, 'mu'));
-		return match?.[1]?.replace(/^['"]|['"]$/gu, '');
-	} catch {
-		return undefined;
-	}
 }
 
 function skill_file_size(

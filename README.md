@@ -96,6 +96,19 @@ check-skills init my-skill
 check-skills init my-skill --references --scripts --assets
 ```
 
+## Programmatic API
+
+`check-skills` also exposes a typed ESM API:
+
+```ts
+import { validate_paths } from "check-skills";
+
+const report = validate_paths(["."], { recursive: true });
+```
+
+The CLI entrypoint is available as `check-skills/cli` for tooling that
+needs to resolve it explicitly.
+
 ## What it checks
 
 Errors include missing `SKILL.md`, invalid YAML frontmatter, missing
