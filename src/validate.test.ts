@@ -66,6 +66,21 @@ description: Use when you need to validate skills.
 		);
 	});
 
+	it('accepts lowercase skill.md like the reference implementation', () => {
+		const root = tmp_root();
+		const dir = join(root, 'lowercase-skill');
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(
+			join(dir, 'skill.md'),
+			VALID_SKILL.replaceAll('good-skill', 'lowercase-skill'),
+		);
+
+		const report = validate_paths(['lowercase-skill'], { cwd: root });
+
+		expect(report.ok).toBe(true);
+		expect(report.skills[0].path).toBe('lowercase-skill');
+	});
+
 	it('reports name mismatch', () => {
 		const root = tmp_root();
 		skill(
@@ -87,6 +102,52 @@ description: Use when you need to validate skills.
 		expect(report.skills[0].problems).toContainEqual(
 			expect.objectContaining({ code: 'name-mismatch' }),
 		);
+	});
+
+	it('rejects unknown frontmatter fields outside metadata', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'unknown-field',
+			`---
+name: unknown-field
+description: Use when you need to validate Agent Skills frontmatter.
+owner: platform-team
+---
+
+## Steps
+- Validate.
+`,
+		);
+
+		const report = validate_paths(['unknown-field'], { cwd: root });
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(report.ok).toBe(false);
+		expect(codes).toContain('unexpected-frontmatter-field');
+	});
+
+	it('accepts unicode lowercase alphanumeric skill names', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'café-skill',
+			`---
+name: café-skill
+description: Use when you need to validate unicode skill names.
+---
+
+## Steps
+- Validate.
+`,
+		);
+
+		const report = validate_paths(['café-skill'], { cwd: root });
+
+		expect(report.ok).toBe(true);
+		expect(report.summary.errors).toBe(0);
 	});
 
 	it('warns on bad descriptions', () => {

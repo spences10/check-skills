@@ -4,7 +4,13 @@ import {
 	readFileSync,
 	statSync,
 } from 'node:fs';
-import { basename, join, relative, resolve } from 'node:path';
+import {
+	basename,
+	dirname,
+	join,
+	relative,
+	resolve,
+} from 'node:path';
 import YAML from 'yaml';
 import { run_adapter_rules } from './rules/adapters.js';
 import { run_quality_rules } from './rules/quality.js';
@@ -34,8 +40,8 @@ export function discover_skill_dirs(
 		const stats = statSync(full_path);
 		if (stats.isFile()) {
 			found.add(
-				basename(full_path) === 'SKILL.md'
-					? resolve(full_path, '..')
+				is_skill_md_name(basename(full_path))
+					? dirname(full_path)
 					: full_path,
 			);
 			continue;
@@ -46,7 +52,7 @@ export function discover_skill_dirs(
 			continue;
 		}
 
-		if (existsSync(join(full_path, 'SKILL.md'))) {
+		if (find_skill_file(full_path)) {
 			found.add(full_path);
 			continue;
 		}
@@ -63,11 +69,23 @@ export function discover_skill_dirs(
 	return [...found].sort();
 }
 
+function is_skill_md_name(name: string): boolean {
+	return name === 'SKILL.md' || name === 'skill.md';
+}
+
+function find_skill_file(dir: string): string | undefined {
+	for (const name of ['SKILL.md', 'skill.md']) {
+		const path = join(dir, name);
+		if (existsSync(path)) return path;
+	}
+	return undefined;
+}
+
 function walk_for_skill_dirs(root: string): string[] {
 	const found: string[] = [];
 	const entries = safe_read_dir(root);
 
-	if (existsSync(join(root, 'SKILL.md'))) {
+	if (find_skill_file(root)) {
 		found.push(root);
 		return found;
 	}
@@ -107,7 +125,7 @@ function safe_is_directory(path: string): boolean {
 }
 
 export function read_skill_document(dir: string): SkillDocument {
-	const skill_file = join(dir, 'SKILL.md');
+	const skill_file = find_skill_file(dir) ?? join(dir, 'SKILL.md');
 
 	if (!existsSync(skill_file)) {
 		return {

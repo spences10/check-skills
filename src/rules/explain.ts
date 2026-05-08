@@ -16,6 +16,14 @@ export const RULES: RuleExplanation[] = [
 			'Fix the YAML block between the opening and closing --- lines.',
 	},
 	{
+		code: 'unexpected-frontmatter-field',
+		severity: 'error',
+		description:
+			'The frontmatter contains a field outside the Agent Skills spec.',
+		suggestion:
+			'Remove the field, or move custom data under metadata.',
+	},
+	{
 		code: 'missing-name',
 		severity: 'error',
 		description: 'The required frontmatter name field is missing.',

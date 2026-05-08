@@ -2,7 +2,14 @@ import { existsSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, normalize } from 'node:path';
 import type { Problem, SkillDocument } from '../types.js';
 
-const VALID_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ALLOWED_FRONTMATTER_FIELDS = new Set([
+	'name',
+	'description',
+	'license',
+	'compatibility',
+	'metadata',
+	'allowed-tools',
+]);
 
 interface LocalReference {
 	path: string;
@@ -35,6 +42,21 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 	const frontmatter = document.frontmatter;
 	if (!frontmatter) {
 		return problems;
+	}
+
+	for (const field of Object.keys(frontmatter)) {
+		if (!ALLOWED_FRONTMATTER_FIELDS.has(field)) {
+			problems.push({
+				severity: 'error',
+				code: 'unexpected-frontmatter-field',
+				message: `frontmatter field is not defined by the Agent Skills spec: ${field}`,
+				file: 'SKILL.md',
+				line: frontmatter_line(document, field),
+				column: 1,
+				suggestion:
+					'Remove the field, or move custom data under metadata.',
+			});
+		}
 	}
 
 	if (
@@ -80,12 +102,12 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 			});
 		}
 
-		if (!VALID_NAME.test(name)) {
+		if (!is_valid_skill_name(name)) {
 			problems.push({
 				severity: 'error',
 				code: 'invalid-name',
 				message:
-					'name must be lowercase kebab-case with no spaces, underscores, leading/trailing hyphens, or consecutive hyphens',
+					'name must be lowercase letters or digits separated by single hyphens, with no spaces, underscores, leading/trailing hyphens, or consecutive hyphens',
 				file: 'SKILL.md',
 				line,
 				column: 1,
@@ -207,6 +229,20 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 
 	problems.push(...check_referenced_files(document));
 	return problems;
+}
+
+function is_valid_skill_name(name: string): boolean {
+	const normalized = name.normalize('NFKC');
+	return (
+		name === normalized &&
+		name === name.toLowerCase() &&
+		!name.startsWith('-') &&
+		!name.endsWith('-') &&
+		!name.includes('--') &&
+		Array.from(name).every(
+			(char) => char === '-' || /[\p{Ll}\p{Nd}]/u.test(char),
+		)
+	);
 }
 
 function is_string_map(value: unknown): boolean {
