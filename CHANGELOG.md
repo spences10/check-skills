@@ -1,5 +1,12 @@
 # check-skills
 
+## 0.0.8
+
+### Patch Changes
+
+- 822c919: Add advisory description quality check for gerund or
+  action-verb phrasing to improve skill activation diagnostics.
+
 ## 0.0.7
 
 ### Patch Changes
