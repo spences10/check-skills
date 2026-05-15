@@ -13,7 +13,11 @@ import {
 } from 'node:path';
 import YAML from 'yaml';
 import { run_adapter_rules } from './rules/adapters.js';
-import { run_quality_rules } from './rules/quality.js';
+import {
+	description_has_gerund,
+	description_starts_action_verb,
+	run_quality_rules,
+} from './rules/quality.js';
 import { run_spec_rules } from './rules/spec.js';
 import type {
 	Problem,
@@ -266,6 +270,9 @@ function collect_skill_stats(document: SkillDocument): SkillStats {
 		estimated_tokens: estimate_tokens(document.content),
 		description_length: description.length,
 		description_estimated_tokens: estimate_tokens(description),
+		description_has_gerund: description_has_gerund(description),
+		description_starts_action_verb:
+			description_starts_action_verb(description),
 		code_blocks: Math.floor(
 			(document.body.match(/```/gu)?.length ?? 0) / 2,
 		),

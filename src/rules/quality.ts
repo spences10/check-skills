@@ -17,6 +17,9 @@ const VENDOR_WORDS = [
 	'Pi',
 ];
 
+const ACTION_VERB_PATTERN =
+	/^(add|analyze|audit|build|check|compare|create|debug|design|diagnose|extract|find|fix|generate|implement|improve|inspect|migrate|plan|query|refactor|review|setup|summarize|test|validate|write)\b/iu;
+
 export function run_quality_rules(
 	document: SkillDocument,
 ): Problem[] {
@@ -86,6 +89,23 @@ export function run_quality_rules(
 				column: 1,
 				suggestion:
 					'Rewrite the description to start with or include: "Use when..."',
+			});
+		}
+
+		if (
+			!description_has_gerund(description) &&
+			!description_starts_action_verb(description)
+		) {
+			problems.push({
+				severity: 'warn',
+				code: 'description-lacks-gerund-or-action',
+				message:
+					'description lacks gerund/action phrasing for reliable activation',
+				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Use task-state wording such as "Use when debugging...", or start with a concrete action verb.',
 			});
 		}
 	}
@@ -324,15 +344,23 @@ function keywords(text: string): Set<string> {
 	);
 }
 
+export function description_has_gerund(description: string): boolean {
+	return /\b[\p{L}-]+ing\b/iu.test(description);
+}
+
+export function description_starts_action_verb(
+	description: string,
+): boolean {
+	return ACTION_VERB_PATTERN.test(description.trim());
+}
+
 function has_trigger_language(description: string): boolean {
 	return (
 		/\b(use when|use for|use to|when asked|when the user|run when|trigger)\b/iu.test(
 			description,
 		) ||
 		/^(when|for)\b/iu.test(description.trim()) ||
-		/^(add|analyze|audit|build|check|compare|create|debug|design|diagnose|extract|find|fix|generate|implement|improve|inspect|migrate|plan|query|refactor|review|setup|summarize|test|validate|write)\b/iu.test(
-			description.trim(),
-		)
+		description_starts_action_verb(description)
 	);
 }
 

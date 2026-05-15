@@ -174,6 +174,67 @@ Some notes.
 		expect(codes).toContain('missing-trigger-language');
 	});
 
+	it('warns when descriptions lack gerund or action phrasing', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'activation-skill',
+			`---
+name: activation-skill
+description: Use when architecture decisions are unclear.
+---
+
+## Steps
+- Review the decision.
+`,
+		);
+
+		const report = validate_paths(['activation-skill'], {
+			cwd: root,
+		});
+		const codes = report.skills[0].problems.map(
+			(problem) => problem.code,
+		);
+
+		expect(codes).toContain('description-lacks-gerund-or-action');
+	});
+
+	it('accepts gerund or action-verb description phrasing', () => {
+		const root = tmp_root();
+		skill(
+			root,
+			'gerund-skill',
+			VALID_SKILL.replace(
+				'name: good-skill',
+				'name: gerund-skill',
+			).replace(
+				'description: Use when you need to validate, review, or improve portable Agent Skills.',
+				'description: Use when debugging failed CI pipelines.',
+			),
+		);
+		skill(
+			root,
+			'action-skill',
+			VALID_SKILL.replace(
+				'name: good-skill',
+				'name: action-skill',
+			).replace(
+				'description: Use when you need to validate, review, or improve portable Agent Skills.',
+				'description: Query session analytics for token usage.',
+			),
+		);
+
+		const report = validate_paths(['.'], {
+			cwd: root,
+			recursive: true,
+		});
+		const codes = report.skills.flatMap((skill) =>
+			skill.problems.map((problem) => problem.code),
+		);
+
+		expect(codes).not.toContain('description-lacks-gerund-or-action');
+	});
+
 	it('discovers skills recursively', () => {
 		const root = tmp_root();
 		mkdirSync(join(root, 'group'), { recursive: true });

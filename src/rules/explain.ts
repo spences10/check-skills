@@ -125,6 +125,14 @@ export const RULES: RuleExplanation[] = [
 			'Include "Use when...", "When...", "For...", or a clear imperative task phrase such as "Analyze...".',
 	},
 	{
+		code: 'description-lacks-gerund-or-action',
+		severity: 'warn',
+		description:
+			'The description lacks gerund/action phrasing for reliable activation.',
+		suggestion:
+			'Use task-state wording such as "Use when debugging...", or start with a concrete action verb.',
+	},
+	{
 		code: 'skill-md-too-long',
 		severity: 'warn',
 		description: 'SKILL.md is over 500 lines.',

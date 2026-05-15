@@ -27,6 +27,8 @@ const REPORT: ValidationReport = {
 				estimated_tokens: 300,
 				description_length: 80,
 				description_estimated_tokens: 20,
+				description_has_gerund: true,
+				description_starts_action_verb: false,
 				code_blocks: 2,
 				sections: 3,
 				long_paragraphs: 1,

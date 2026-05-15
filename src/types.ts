@@ -45,6 +45,8 @@ export interface SkillStats {
 	estimated_tokens: number;
 	description_length: number;
 	description_estimated_tokens: number;
+	description_has_gerund: boolean;
+	description_starts_action_verb: boolean;
 	code_blocks: number;
 	sections: number;
 	long_paragraphs: number;
