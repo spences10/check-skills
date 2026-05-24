@@ -1,4 +1,8 @@
 import type { AgentName, Problem, SkillDocument } from '../types.js';
+import {
+	frontmatter_line,
+	is_multiline_description,
+} from './spec.js';
 
 const AGENT_LABELS: Record<AgentName, string> = {
 	codex: 'Codex',
@@ -32,6 +36,23 @@ export function run_adapter_rules(
 			line: 1,
 			column: 1,
 			suggestion: `Add ${label} to compatibility if this skill is intended for that agent.`,
+		});
+	}
+
+	if (
+		agent === 'claude-code' &&
+		is_multiline_description(document.frontmatter_raw ?? '')
+	) {
+		problems.push({
+			severity: 'error',
+			code: 'claude-code-multiline-description',
+			message:
+				'Claude Code may not reliably discover skills with folded or multiline YAML descriptions',
+			file: 'SKILL.md',
+			line: frontmatter_line(document, 'description'),
+			column: 1,
+			suggestion:
+				'Rewrite description on one line for Claude Code compatibility, e.g. description: Use when...',
 		});
 	}
 

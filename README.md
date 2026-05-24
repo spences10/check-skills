@@ -135,14 +135,15 @@ count, estimated tokens, description length/tokens, code blocks,
 sections, and long paragraphs. Human output shows those stats when a
 skill has findings; JSON output always includes them.
 
-Warnings include vague descriptions, list-heavy descriptions,
-first/second-person wording, missing trigger language, missing
-gerund/action phrasing, oversized `SKILL.md` files, too many sections
-or code blocks, long paragraphs, TODO/template placeholders, low
-description/body keyword overlap, vendor-specific wording in portable
-skills, empty resource directories, orphaned reference/script/asset
-files, unreferenced scripts, non-executable referenced scripts, and
-missing concrete instructions.
+Warnings include valid but nonportable multiline descriptions, vague
+descriptions, list-heavy descriptions, first/second-person wording,
+missing trigger language, missing gerund/action phrasing, oversized
+`SKILL.md` files, too many sections or code blocks, long paragraphs,
+TODO/template placeholders, low description/body keyword overlap,
+vendor-specific wording in portable skills, empty resource
+directories, orphaned reference/script/asset files, unreferenced
+scripts, non-executable referenced scripts, and missing concrete
+instructions.
 
 Description quality examples:
 

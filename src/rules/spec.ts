@@ -132,19 +132,6 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 		});
 	} else {
 		const line = frontmatter_line(document, 'description');
-		if (is_multiline_description(document.frontmatter_raw ?? '')) {
-			problems.push({
-				severity: 'error',
-				code: 'multiline-description',
-				message:
-					'description must be a single-line YAML scalar; folded or multiline descriptions are not reliably recognized by skill loaders',
-				file: 'SKILL.md',
-				line,
-				column: 1,
-				suggestion:
-					'Rewrite description on one line, e.g. description: Use when...',
-			});
-		}
 
 		if (frontmatter.description.length > 1024) {
 			problems.push({
@@ -255,7 +242,9 @@ function is_string_map(value: unknown): boolean {
 	);
 }
 
-function is_multiline_description(frontmatter_raw: string): boolean {
+export function is_multiline_description(
+	frontmatter_raw: string,
+): boolean {
 	const lines = frontmatter_raw.split(/\r?\n/);
 	const index = lines.findIndex((line) =>
 		/^description\s*:/u.test(line),

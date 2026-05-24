@@ -5,6 +5,7 @@ import {
 	extract_local_reference_locations,
 	frontmatter_line,
 	is_executable,
+	is_multiline_description,
 } from './spec.js';
 
 const VENDOR_WORDS = [
@@ -20,8 +21,13 @@ const VENDOR_WORDS = [
 const ACTION_VERB_PATTERN =
 	/^(add|analyze|audit|build|check|compare|configure|convert|coordinate|create|debug|deploy|design|diagnose|document|extract|find|fix|format|generate|implement|improve|inspect|install|manage|migrate|monitor|optimize|package|parse|plan|publish|query|refactor|release|remove|review|run|secure|setup|summarize|test|translate|troubleshoot|update|upgrade|validate|verify|write)\b/iu;
 
+export interface QualityRuleOptions {
+	portability?: boolean;
+}
+
 export function run_quality_rules(
 	document: SkillDocument,
+	options: QualityRuleOptions = {},
 ): Problem[] {
 	const problems: Problem[] = [];
 	const description =
@@ -34,6 +40,23 @@ export function run_quality_rules(
 			: '';
 
 	if (description) {
+		if (
+			options.portability !== false &&
+			is_multiline_description(document.frontmatter_raw ?? '')
+		) {
+			problems.push({
+				severity: 'warn',
+				code: 'nonportable-multiline-description',
+				message:
+					'description uses valid multiline YAML, but some skill loaders require a single-line scalar',
+				file: 'SKILL.md',
+				line: frontmatter_line(document, 'description'),
+				column: 1,
+				suggestion:
+					'Rewrite description on one line for maximum loader portability, e.g. description: Use when...',
+			});
+		}
+
 		const vague_term = vague_description_term(description);
 		if (vague_term) {
 			problems.push({

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { LLM_BLOCK } from './output/usage.js';
+import type { ValidationReport } from '../types.js';
 import {
 	format_github_validation,
+	format_llm_validation,
+	format_problem,
 	format_stats_summary,
 	format_validation,
-} from './output/validation.js';
-import type { ValidationReport } from './types.js';
+} from './validation.js';
 
 const REPORT: ValidationReport = {
 	ok: false,
@@ -48,13 +49,11 @@ const REPORT: ValidationReport = {
 	],
 };
 
-describe('output formatting', () => {
-	it('shows progressive stats for problem skills in human output', () => {
+describe('validation output formatting', () => {
+	it('shows stats and fixes in human output', () => {
 		const output = format_validation(REPORT);
 
-		expect(output).toContain(
-			'stats: 120 words, ~300 tokens, 20 lines, 3 sections, 2 code blocks, 1 long paragraphs',
-		);
+		expect(output).toContain('120 words, ~300 tokens');
 		expect(output).toContain('fix: Fix it.');
 	});
 
@@ -66,15 +65,35 @@ describe('output formatting', () => {
 		expect(output).toContain('bad value, needs %25 escaping');
 	});
 
-	it('formats stat summaries directly', () => {
-		expect(format_stats_summary(REPORT.skills[0].stats)).toContain(
-			'120 words',
+	it('formats LLM statuses and quiet empty output', () => {
+		const clean_report: ValidationReport = {
+			ok: true,
+			summary: {
+				checked: 1,
+				passed: 1,
+				failed: 0,
+				errors: 0,
+				warnings: 0,
+			},
+			skills: [{ ...REPORT.skills[0], ok: true, problems: [] }],
+		};
+
+		expect(format_llm_validation(REPORT)).toContain('FAIL bad,skill');
+		expect(format_llm_validation(clean_report, false, true)).toBe(
+			'No problems found.',
 		);
 	});
 
-	it('documents common LLM workflows in the help appendix', () => {
-		expect(LLM_BLOCK).toContain('validate <skill-path>');
-		expect(LLM_BLOCK).toContain('--recursive');
-		expect(LLM_BLOCK).toContain('--json');
+	it('formats stat summaries and problems directly', () => {
+		expect(format_stats_summary(REPORT.skills[0].stats)).toContain(
+			'120 words',
+		);
+		expect(
+			format_problem({
+				severity: 'warn',
+				code: 'example-warning',
+				message: 'check this',
+			}),
+		).toContain('example-warning');
 	});
 });

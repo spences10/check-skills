@@ -235,7 +235,11 @@ export function validate_skill_dir(
 	problems.push(...run_spec_rules(document));
 
 	if (options.quality !== false) {
-		problems.push(...run_quality_rules(document));
+		problems.push(
+			...run_quality_rules(document, {
+				portability: options.agent !== 'claude-code',
+			}),
+		);
 	}
 
 	if (options.agent) {

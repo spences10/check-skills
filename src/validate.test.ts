@@ -426,7 +426,7 @@ metadata:
 		);
 	});
 
-	it('rejects folded YAML descriptions because skill loaders do not reliably recognize them', () => {
+	it('warns for folded YAML descriptions by default', () => {
 		const root = tmp_root();
 		skill(
 			root,
@@ -443,15 +443,20 @@ description: >
 		);
 
 		const report = validate_paths(['folded-skill'], { cwd: root });
-		const codes = report.skills[0].problems.map(
-			(problem) => problem.code,
-		);
+		const problems = report.skills[0].problems;
+		const codes = problems.map((problem) => problem.code);
 
-		expect(report.ok).toBe(false);
-		expect(codes).toContain('multiline-description');
+		expect(report.ok).toBe(true);
+		expect(codes).toContain('nonportable-multiline-description');
+		expect(
+			problems.find(
+				(problem) =>
+					problem.code === 'nonportable-multiline-description',
+			)?.severity,
+		).toBe('warn');
 	});
 
-	it('rejects indented multiline YAML descriptions', () => {
+	it('fails Claude Code adapter checks for multiline YAML descriptions', () => {
 		const root = tmp_root();
 		skill(
 			root,
@@ -467,13 +472,22 @@ description: Use when you need
 `,
 		);
 
-		const report = validate_paths(['multiline-skill'], { cwd: root });
-		const codes = report.skills[0].problems.map(
-			(problem) => problem.code,
-		);
+		const report = validate_paths(['multiline-skill'], {
+			cwd: root,
+			agent: 'claude-code',
+		});
+		const problems = report.skills[0].problems;
+		const codes = problems.map((problem) => problem.code);
 
 		expect(report.ok).toBe(false);
-		expect(codes).toContain('multiline-description');
+		expect(codes).not.toContain('nonportable-multiline-description');
+		expect(codes).toContain('claude-code-multiline-description');
+		expect(
+			problems.find(
+				(problem) =>
+					problem.code === 'claude-code-multiline-description',
+			)?.severity,
+		).toBe('error');
 	});
 
 	it('reports unsafe paths, orphaned files, and empty skill directories', () => {
