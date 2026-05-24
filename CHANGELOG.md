@@ -1,5 +1,14 @@
 # check-skills
 
+## 0.0.9
+
+### Patch Changes
+
+- ab131ec: Expand description action verbs and document gerund/action
+  phrasing examples for skill activation quality checks.
+- 6f37907: Distinguish multiline description portability from Claude
+  Code compatibility and add colocated command output rule tests.
+
 ## 0.0.8
 
 ### Patch Changes
