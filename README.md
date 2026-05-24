@@ -81,7 +81,8 @@ description, and absolute `SKILL.md` location.
 ### `stats <path>`
 
 Summarizes a skills directory, including pass/fail counts, warnings,
-duplicate names, and asset/reference/script usage.
+duplicate names, asset/reference/script usage, and description quality
+signals such as gerund phrasing or leading action verbs.
 
 ### `doctor <path...>`
 
@@ -135,13 +136,28 @@ sections, and long paragraphs. Human output shows those stats when a
 skill has findings; JSON output always includes them.
 
 Warnings include vague descriptions, list-heavy descriptions,
-first/second-person wording, missing trigger language, oversized
-`SKILL.md` files, too many sections or code blocks, long paragraphs,
-TODO/template placeholders, low description/body keyword overlap,
-vendor-specific wording in portable skills, empty resource
-directories, orphaned reference/script/asset files, unreferenced
-scripts, non-executable referenced scripts, and missing concrete
-instructions.
+first/second-person wording, missing trigger language, missing
+gerund/action phrasing, oversized `SKILL.md` files, too many sections
+or code blocks, long paragraphs, TODO/template placeholders, low
+description/body keyword overlap, vendor-specific wording in portable
+skills, empty resource directories, orphaned reference/script/asset
+files, unreferenced scripts, non-executable referenced scripts, and
+missing concrete instructions.
+
+Description quality examples:
+
+```yaml
+description: Analyze Excel spreadsheets and generate charts. Use when analyzing tabular data or .xlsx files.
+description: Coordinate teammate work across branches. Use when delegating parallel implementation or review tasks.
+description: Use when debugging failed CI pipelines, reproducing container issues, or verifying fixes locally.
+```
+
+Avoid vague or passive descriptions:
+
+```yaml
+description: Helps with data.
+description: Architecture decisions are unclear.
+```
 
 ## Relationship to agentskills.io
 

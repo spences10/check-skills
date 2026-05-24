@@ -130,7 +130,7 @@ export const RULES: RuleExplanation[] = [
 		description:
 			'The description lacks gerund/action phrasing for reliable activation.',
 		suggestion:
-			'Use task-state wording such as "Use when debugging...", or start with a concrete action verb.',
+			'Use task-state wording such as "Use when debugging...", or start with a concrete action verb such as "Analyze", "Coordinate", or "Verify".',
 	},
 	{
 		code: 'skill-md-too-long',

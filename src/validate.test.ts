@@ -223,6 +223,17 @@ description: Use when architecture decisions are unclear.
 				'description: Query session analytics for token usage.',
 			),
 		);
+		skill(
+			root,
+			'expanded-action-skill',
+			VALID_SKILL.replace(
+				'name: good-skill',
+				'name: expanded-action-skill',
+			).replace(
+				'description: Use when you need to validate, review, or improve portable Agent Skills.',
+				'description: Coordinate parallel teammate work across branches.',
+			),
+		);
 
 		const report = validate_paths(['.'], {
 			cwd: root,

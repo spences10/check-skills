@@ -18,7 +18,7 @@ const VENDOR_WORDS = [
 ];
 
 const ACTION_VERB_PATTERN =
-	/^(add|analyze|audit|build|check|compare|create|debug|design|diagnose|extract|find|fix|generate|implement|improve|inspect|migrate|plan|query|refactor|review|setup|summarize|test|validate|write)\b/iu;
+	/^(add|analyze|audit|build|check|compare|configure|convert|coordinate|create|debug|deploy|design|diagnose|document|extract|find|fix|format|generate|implement|improve|inspect|install|manage|migrate|monitor|optimize|package|parse|plan|publish|query|refactor|release|remove|review|run|secure|setup|summarize|test|translate|troubleshoot|update|upgrade|validate|verify|write)\b/iu;
 
 export function run_quality_rules(
 	document: SkillDocument,
