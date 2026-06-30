@@ -1,5 +1,12 @@
 # check-skills
 
+## 0.0.10
+
+### Patch Changes
+
+- 1689cff: Clarify invalid metadata diagnostics by reporting value
+  types and suggesting flattened dotted string metadata keys.
+
 ## 0.0.9
 
 ### Patch Changes
