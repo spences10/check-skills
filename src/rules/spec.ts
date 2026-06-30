@@ -202,15 +202,16 @@ export function run_spec_rules(document: SkillDocument): Problem[] {
 		frontmatter.metadata !== undefined &&
 		!is_string_map(frontmatter.metadata)
 	) {
+		const value_type = metadata_value_type(frontmatter.metadata);
 		problems.push({
 			severity: 'error',
 			code: 'invalid-metadata',
-			message: 'metadata must be a string-to-string map',
+			message: `metadata must be a string-to-string map; received ${value_type}`,
 			file: 'SKILL.md',
 			line: frontmatter_line(document, 'metadata'),
 			column: 1,
 			suggestion:
-				'Use only string values in metadata, or remove the metadata field.',
+				'Use only string values in metadata, flatten nested metadata to dotted keys, or remove the metadata field.',
 		});
 	}
 
@@ -240,6 +241,30 @@ function is_string_map(value: unknown): boolean {
 		!Array.isArray(value) &&
 		Object.values(value).every((item) => typeof item === 'string')
 	);
+}
+
+function metadata_value_type(value: unknown): string {
+	if (Array.isArray(value)) {
+		return 'array';
+	}
+
+	if (value === null) {
+		return 'null';
+	}
+
+	if (typeof value !== 'object') {
+		return typeof value;
+	}
+
+	for (const item of Object.values(value)) {
+		if (typeof item !== 'string') {
+			return Array.isArray(item)
+				? 'nested array value'
+				: `${typeof item} value`;
+		}
+	}
+
+	return 'object';
 }
 
 export function is_multiline_description(

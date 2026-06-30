@@ -39,4 +39,29 @@ describe('run_spec_rules', () => {
 			expect.objectContaining({ code: 'missing-name' }),
 		);
 	});
+
+	it('explains nested metadata values', () => {
+		const skill = document(
+			'name: example-skill\ndescription: Use when validating specs.\nmetadata:\n  openclaw:\n    category: social',
+		);
+		skill.frontmatter = {
+			name: 'example-skill',
+			description: 'Use when validating specs.',
+			metadata: {
+				openclaw: {
+					category: 'social',
+				},
+			},
+		};
+
+		expect(run_spec_rules(skill)).toContainEqual(
+			expect.objectContaining({
+				code: 'invalid-metadata',
+				message:
+					'metadata must be a string-to-string map; received object value',
+				suggestion:
+					'Use only string values in metadata, flatten nested metadata to dotted keys, or remove the metadata field.',
+			}),
+		);
+	});
 });
