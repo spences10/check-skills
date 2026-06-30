@@ -58,7 +58,7 @@
 		"@changesets/cli": "^2.31.0",
 		"@types/node": "^25.8.0",
 		"typescript": "^6.0.3",
-		"vite-plus": "^0.1.21",
+		"vite-plus": "^0.2.0",
 		"vitest": "^4.1.6"
 	},
 	"engines": {
