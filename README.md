@@ -148,9 +148,15 @@ instructions.
 Description quality examples:
 
 ```yaml
-description: Analyze Excel spreadsheets and generate charts. Use when analyzing tabular data or .xlsx files.
-description: Coordinate teammate work across branches. Use when delegating parallel implementation or review tasks.
-description: Use when debugging failed CI pipelines, reproducing container issues, or verifying fixes locally.
+description:
+  Analyze Excel spreadsheets and generate charts. Use when analyzing
+  tabular data or .xlsx files.
+description:
+  Coordinate teammate work across branches. Use when delegating
+  parallel implementation or review tasks.
+description:
+  Use when debugging failed CI pipelines, reproducing container
+  issues, or verifying fixes locally.
 ```
 
 Avoid vague or passive descriptions:
